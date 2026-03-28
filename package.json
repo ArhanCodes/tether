@@ -1,24 +1,31 @@
 {
   "name": "tether",
-  "version": "0.1.0",
+  "version": "1.0.0",
   "private": true,
+  "main": "index.ts",
   "scripts": {
-    "dev": "next dev",
-    "build": "next build",
-    "start": "next start",
-    "lint": "eslint"
+    "start": "expo start",
+    "android": "expo run:android",
+    "ios": "expo run:ios",
+    "web": "expo start --web",
+    "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "next": "16.2.1",
-    "react": "19.2.4",
-    "react-dom": "19.2.4"
+    "@react-native-async-storage/async-storage": "2.2.0",
+    "@react-navigation/native": "^7.2.2",
+    "@react-navigation/native-stack": "^7.14.10",
+    "expo": "~55.0.8",
+    "expo-crypto": "~55.0.10",
+    "expo-speech": "~55.0.9",
+    "expo-speech-recognition": "^3.1.2",
+    "expo-status-bar": "~55.0.4",
+    "react": "19.2.0",
+    "react-native": "0.83.2",
+    "react-native-safe-area-context": "~5.6.2",
+    "react-native-screens": "~4.23.0"
   },
   "devDependencies": {
-    "@types/node": "^20",
-    "@types/react": "^19",
-    "@types/react-dom": "^19",
-    "eslint": "^9",
-    "eslint-config-next": "16.2.1",
-    "typescript": "^5"
+    "@types/react": "~19.2.2",
+    "typescript": "~5.9.2"
   }
 }

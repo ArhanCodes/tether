@@ -1,0 +1,172 @@
+import { useEffect, useState } from "react";
+import {
+  ActivityIndicator,
+  KeyboardAvoidingView,
+  Platform,
+  SafeAreaView,
+  ScrollView,
+  StyleSheet,
+  Text,
+  View,
+} from "react-native";
+import { NavigationContainer } from "@react-navigation/native";
+import { createNativeStackNavigator } from "@react-navigation/native-stack";
+import { StatusBar } from "expo-status-bar";
+
+import {
+  ensureSeedData,
+  getSession,
+  getUsers,
+  type UserAccount,
+} from "../lib/appData";
+import { AuthScreen } from "../screens/AuthScreen";
+import { DoctorScreen } from "../screens/DoctorScreen";
+import { PatientScreen } from "../screens/PatientScreen";
+
+export type RootStackParamList = {
+  Auth: undefined;
+  DoctorWorkspace: { user: UserAccount };
+  PatientCompanion: { user: UserAccount };
+};
+
+const Stack = createNativeStackNavigator<RootStackParamList>();
+
+function ScreenWrapper({ children }: { children: React.ReactNode }) {
+  return (
+    <SafeAreaView style={styles.safeArea}>
+      <StatusBar style="light" />
+      <KeyboardAvoidingView
+        behavior={Platform.OS === "ios" ? "padding" : undefined}
+        style={styles.keyboard}
+      >
+        <ScrollView
+          contentContainerStyle={styles.scrollContent}
+          showsVerticalScrollIndicator={false}
+        >
+          {children}
+        </ScrollView>
+      </KeyboardAvoidingView>
+    </SafeAreaView>
+  );
+}
+
+function AuthWrapper(props: { navigation: any; route: any }) {
+  return (
+    <ScreenWrapper>
+      <AuthScreen {...props} />
+    </ScreenWrapper>
+  );
+}
+
+function DoctorWrapper(props: { navigation: any; route: any }) {
+  return (
+    <ScreenWrapper>
+      <DoctorScreen {...props} />
+    </ScreenWrapper>
+  );
+}
+
+function PatientWrapper(props: { navigation: any; route: any }) {
+  return (
+    <ScreenWrapper>
+      <PatientScreen {...props} />
+    </ScreenWrapper>
+  );
+}
+
+export function AppNavigator() {
+  const [isBooting, setIsBooting] = useState(true);
+  const [initialRoute, setInitialRoute] = useState<keyof RootStackParamList>("Auth");
+  const [initialUser, setInitialUser] = useState<UserAccount | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    async function boot() {
+      try {
+        await ensureSeedData();
+        const [users, session] = await Promise.all([getUsers(), getSession()]);
+
+        if (cancelled) return;
+
+        if (session) {
+          const found = users.find((u) => u.id === session.userId) ?? null;
+          if (found) {
+            setInitialUser(found);
+            setInitialRoute(
+              found.role === "doctor" ? "DoctorWorkspace" : "PatientCompanion",
+            );
+          }
+        }
+      } catch (error) {
+        console.error("Boot error:", error);
+      } finally {
+        if (!cancelled) setIsBooting(false);
+      }
+    }
+
+    void boot();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  if (isBooting) {
+    return (
+      <SafeAreaView style={styles.safeArea}>
+        <StatusBar style="light" />
+        <View style={styles.loadingWrap}>
+          <ActivityIndicator size="large" color="#e9dcc4" />
+          <Text style={styles.loadingText}>Loading Tether...</Text>
+        </View>
+      </SafeAreaView>
+    );
+  }
+
+  return (
+    <NavigationContainer>
+      <Stack.Navigator
+        initialRouteName={initialRoute}
+        screenOptions={{ headerShown: false, animation: "fade" }}
+      >
+        <Stack.Screen name="Auth" component={AuthWrapper} />
+        <Stack.Screen
+          name="DoctorWorkspace"
+          component={DoctorWrapper}
+          initialParams={initialUser ? { user: initialUser } : undefined}
+        />
+        <Stack.Screen
+          name="PatientCompanion"
+          component={PatientWrapper}
+          initialParams={initialUser ? { user: initialUser } : undefined}
+        />
+      </Stack.Navigator>
+    </NavigationContainer>
+  );
+}
+
+const styles = StyleSheet.create({
+  safeArea: {
+    flex: 1,
+    backgroundColor: "#091411",
+  },
+  keyboard: {
+    flex: 1,
+  },
+  scrollContent: {
+    padding: 18,
+    paddingBottom: 36,
+    gap: 16,
+  },
+  loadingWrap: {
+    flex: 1,
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 14,
+  },
+  loadingText: {
+    color: "#f1e7d5",
+    fontSize: 16,
+    fontWeight: "700",
+  },
+});

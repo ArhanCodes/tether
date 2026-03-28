@@ -1,36 +1,85 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Tether
 
-## Getting Started
+Tether is a React Native + TypeScript mobile app built with Expo.
 
-First, run the development server:
+Doctors publish personalized recovery plans. Patients receive AI-powered guidance via text or voice, grounded in what their doctor documented.
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+## Architecture
+
+```
+App.tsx                          # Entry point with error boundary
+src/
+  navigation/AppNavigator.tsx    # React Navigation stack (Auth, Doctor, Patient)
+  screens/
+    AuthScreen.tsx               # Login / signup with role selection
+    DoctorScreen.tsx             # Doctor workspace: create, edit, publish plans
+    PatientScreen.tsx            # Patient companion: AI chat, voice, doctor messaging
+  components/
+    CheckboxRow.tsx              # Reusable checkbox with label
+    ErrorBoundary.tsx            # App-level error boundary
+    FieldLabel.tsx               # Styled form label
+    InputField.tsx               # Text input with label
+    MessageBubble.tsx            # Chat message bubble with urgency badge
+    SectionCard.tsx              # Rounded card container
+    SummaryPill.tsx              # Key-value display pill
+  lib/
+    ai.ts                        # Claude API integration (falls back to keyword matching)
+    appData.ts                   # AsyncStorage persistence, auth with hashed passwords
+    config.ts                    # API key config (gitignored)
+    config.template.ts           # Template for config.ts
+    crypto.ts                    # SHA-256 password hashing via expo-crypto
+    showcase.ts                  # Care plan model, keyword-based fallback AI
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## Features
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+- Role-based auth with hashed passwords (SHA-256 via expo-crypto)
+- React Navigation stack with automatic session restore
+- Doctor workspace: create/edit/publish recovery plans to specific patients
+- Patient companion: view plan, ask AI questions, voice input/output
+- Claude API integration for intelligent responses (falls back to keyword matching)
+- In-app doctor-patient messaging
+- Error boundary and try/catch on all async storage operations
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## Starter accounts
 
-## Learn More
+- Doctor: `doctor@tether.app` / `password123`
+- Patient: `patient@tether.app` / `password123`
 
-To learn more about Next.js, take a look at the following resources:
+## AI setup
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+To enable Claude-powered AI responses:
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+1. Copy `src/lib/config.template.ts` to `src/lib/config.ts`
+2. Add your Anthropic API key to `config.ts`
+3. The app falls back to keyword matching if no API key is set
 
-## Deploy on Vercel
+## Run it
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+```bash
+npm install
+npm run ios
+```
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+Or:
+
+```bash
+npm run android
+```
+
+For the full voice flow, use a native build rather than Expo web.
+
+## Stack
+
+- Expo SDK 55
+- React Native
+- TypeScript (strict)
+- React Navigation (native stack)
+- expo-crypto (password hashing)
+- expo-speech + expo-speech-recognition (voice I/O)
+- @react-native-async-storage/async-storage
+- Claude API (optional, for AI responses)
+
+## Production notes
+
+This is structured like a real app, but for a true App Store release you would still want to replace local on-device auth and storage with a secure backend, proper authentication, encrypted data handling, and compliant clinical infrastructure.
