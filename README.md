@@ -1,4 +1,4 @@
-# Tether
+# tether
 
 [Tether](https://joinlaunchpad.com/#/projects/6672/tether-bio-acoustic-vocal-biomarker-monitoring-system-1) is a React Native + TypeScript mobile app built with Expo
 
