@@ -37,39 +37,40 @@ RULES:
 }`;
 }
 
-async function callClaudeAPI(
+async function callGroqAPI(
   systemPrompt: string,
   userMessage: string,
 ): Promise<AssistantReply> {
-  const response = await fetch("https://api.anthropic.com/v1/messages", {
+  const response = await fetch("https://api.groq.com/openai/v1/chat/completions", {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
-      "x-api-key": AI_CONFIG.apiKey,
-      "anthropic-version": "2023-06-01",
+      Authorization: `Bearer ${AI_CONFIG.apiKey}`,
     },
     body: JSON.stringify({
       model: AI_CONFIG.model,
       max_tokens: AI_CONFIG.maxTokens,
-      system: systemPrompt,
-      messages: [{ role: "user", content: userMessage }],
+      messages: [
+        { role: "system", content: systemPrompt },
+        { role: "user", content: userMessage },
+      ],
     }),
   });
 
   if (!response.ok) {
     const errorText = await response.text();
-    throw new Error(`Claude API error (${response.status}): ${errorText}`);
+    throw new Error(`Groq API error (${response.status}): ${errorText}`);
   }
 
   const data = await response.json();
-  const text = data.content?.[0]?.text;
+  const text = data.choices?.[0]?.message?.content;
   if (!text) {
-    throw new Error("Empty response from Claude API");
+    throw new Error("Empty response from Groq API");
   }
 
   const jsonMatch = text.match(/\{[\s\S]*\}/);
   if (!jsonMatch) {
-    throw new Error("Could not parse JSON from Claude response");
+    throw new Error("Could not parse JSON from Groq response");
   }
 
   const parsed = JSON.parse(jsonMatch[0]) as AssistantReply;
@@ -91,7 +92,7 @@ export async function generateAIReply(
 
   try {
     const systemPrompt = buildSystemPrompt(plan);
-    return await callClaudeAPI(systemPrompt, patientMessage);
+    return await callGroqAPI(systemPrompt, patientMessage);
   } catch {
     return fallbackReply(plan, patientMessage);
   }
@@ -108,7 +109,7 @@ export async function generateAIQuickReply(
 
   try {
     const systemPrompt = buildSystemPrompt(plan);
-    return await callClaudeAPI(systemPrompt, label);
+    return await callGroqAPI(systemPrompt, label);
   } catch {
     return fallbackQuickReply(plan, intent);
   }
