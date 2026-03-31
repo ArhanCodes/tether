@@ -1,6 +1,6 @@
 # Tether - React Native / Expo App
 
-This is a React Native app built with Expo SDK 55. It is NOT a Next.js or web project.
+This is a React Native app built with Expo SDK 55.
 
 ## Key conventions
 - Entry point: `index.ts` -> `App.tsx`
