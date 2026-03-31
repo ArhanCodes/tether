@@ -24,6 +24,20 @@
 - urgency badges on AI responses (routine / contact clinician / urgent)
 - handoff suggestion when AI can't fully answer
 - direct messaging to doctor
+- voice biomarker analysis (breathing rate, cough detection, vocal tremor, voice energy)
+- biomarker status levels (normal / monitor / alert) with alert popup
+
+### Onboarding
+
+- 5-step tutorial on first launch (welcome, doctors, patients, voice biomarkers, safety)
+- skip button and dot indicators
+- only shows once (stored in AsyncStorage)
+
+### Infrastructure
+
+- Cloudflare Worker proxy — API key stays server-side, never ships in the app
+- Rust WASM biomarker engine runs at the edge inside the worker
+- AI requests routed through worker, falls back to direct Groq, then keyword matching
 
 
 <!--
