@@ -1,4 +1,13 @@
-import { Audio } from "expo-av";
+import {
+  requestRecordingPermissionsAsync,
+  setAudioModeAsync,
+  IOSOutputFormat,
+  AudioQuality,
+} from "expo-audio";
+import AudioModule from "expo-audio/build/AudioModule";
+import { createRecordingOptions } from "expo-audio/build/utils/options";
+import type { RecordingOptions } from "expo-audio";
+import type { AudioRecorder } from "expo-audio/build/AudioModule.types";
 import { AI_CONFIG } from "./config";
 
 export type BiomarkerReport = {
@@ -11,59 +20,59 @@ export type BiomarkerReport = {
   status: "normal" | "monitor" | "alert";
 };
 
-let recording: Audio.Recording | null = null;
+const WAV_RECORDING_OPTIONS: RecordingOptions = {
+  extension: ".wav",
+  sampleRate: 16000,
+  numberOfChannels: 1,
+  bitRate: 256000,
+  android: {
+    outputFormat: "default",
+    audioEncoder: "default",
+    sampleRate: 16000,
+  },
+  ios: {
+    outputFormat: IOSOutputFormat.LINEARPCM,
+    audioQuality: AudioQuality.HIGH,
+    sampleRate: 16000,
+    linearPCMBitDepth: 16,
+    linearPCMIsBigEndian: false,
+    linearPCMIsFloat: false,
+  },
+  web: {
+    mimeType: "audio/wav",
+    bitsPerSecond: 256000,
+  },
+};
+
+let recorder: AudioRecorder | null = null;
 
 export async function startBiomarkerRecording(): Promise<void> {
-  const permission = await Audio.requestPermissionsAsync();
+  const permission = await requestRecordingPermissionsAsync();
   if (!permission.granted) {
     throw new Error("Microphone permission not granted");
   }
 
-  await Audio.setAudioModeAsync({
-    allowsRecordingIOS: true,
-    playsInSilentModeIOS: true,
+  await setAudioModeAsync({
+    allowsRecording: true,
+    playsInSilentMode: true,
   });
 
-  const { recording: rec } = await Audio.Recording.createAsync({
-    android: {
-      extension: ".wav",
-      outputFormat: Audio.AndroidOutputFormat.DEFAULT,
-      audioEncoder: Audio.AndroidAudioEncoder.DEFAULT,
-      sampleRate: 16000,
-      numberOfChannels: 1,
-      bitRate: 256000,
-    },
-    ios: {
-      extension: ".wav",
-      outputFormat: Audio.IOSOutputFormat.LINEARPCM,
-      audioQuality: Audio.IOSAudioQuality.HIGH,
-      sampleRate: 16000,
-      numberOfChannels: 1,
-      bitRate: 256000,
-      linearPCMBitDepth: 16,
-      linearPCMIsBigEndian: false,
-      linearPCMIsFloat: false,
-    },
-    web: {
-      mimeType: "audio/wav",
-      bitsPerSecond: 256000,
-    },
-  });
-
-  recording = rec;
+  const options = createRecordingOptions(WAV_RECORDING_OPTIONS);
+  recorder = new AudioModule.AudioRecorder(options);
+  recorder.record();
 }
 
 export async function stopAndAnalyze(): Promise<BiomarkerReport | null> {
-  if (!recording) return null;
+  if (!recorder) return null;
 
   try {
-    await recording.stopAndUnloadAsync();
-    const uri = recording.getURI();
-    recording = null;
+    await recorder.stop();
+    const uri = recorder.uri;
+    recorder = null;
 
     if (!uri) return null;
 
-    await Audio.setAudioModeAsync({ allowsRecordingIOS: false });
+    await setAudioModeAsync({ allowsRecording: false });
 
     // Read the WAV file and extract PCM samples
     const response = await fetch(uri);
@@ -91,23 +100,23 @@ export async function stopAndAnalyze(): Promise<BiomarkerReport | null> {
     return (await analyzeResponse.json()) as BiomarkerReport;
   } catch (error) {
     console.error("Biomarker analysis error:", error);
-    recording = null;
+    recorder = null;
     return null;
   }
 }
 
 export function isRecording(): boolean {
-  return recording !== null;
+  return recorder !== null;
 }
 
 export async function cancelRecording(): Promise<void> {
-  if (recording) {
+  if (recorder) {
     try {
-      await recording.stopAndUnloadAsync();
+      await recorder.stop();
     } catch {
       // already stopped
     }
-    recording = null;
+    recorder = null;
   }
 }
 

@@ -50,7 +50,8 @@
           "microphonePermission": "Allow Tether to hear the patient's question.",
           "speechRecognitionPermission": "Allow Tether to convert the patient's speech into text."
         }
-      ]
+      ],
+      "expo-audio"
     ]
   }
 }
