@@ -9,6 +9,7 @@ import {
   Text,
   View,
 } from "react-native";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import { NavigationContainer } from "@react-navigation/native";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import { StatusBar } from "expo-status-bar";
@@ -19,11 +20,13 @@ import {
   getUsers,
   type UserAccount,
 } from "../lib/appData";
+import { OnboardingScreen, ONBOARDING_KEY } from "../screens/OnboardingScreen";
 import { AuthScreen } from "../screens/AuthScreen";
 import { DoctorScreen } from "../screens/DoctorScreen";
 import { PatientScreen } from "../screens/PatientScreen";
 
 export type RootStackParamList = {
+  Onboarding: undefined;
   Auth: undefined;
   DoctorWorkspace: { user: UserAccount };
   PatientCompanion: { user: UserAccount };
@@ -76,7 +79,7 @@ function PatientWrapper(props: { navigation: any; route: any }) {
 
 export function AppNavigator() {
   const [isBooting, setIsBooting] = useState(true);
-  const [initialRoute, setInitialRoute] = useState<keyof RootStackParamList>("Auth");
+  const [initialRoute, setInitialRoute] = useState<keyof RootStackParamList>("Onboarding");
   const [initialUser, setInitialUser] = useState<UserAccount | null>(null);
 
   useEffect(() => {
@@ -85,21 +88,33 @@ export function AppNavigator() {
     async function boot() {
       try {
         await ensureSeedData();
-        const [users, session] = await Promise.all([getUsers(), getSession()]);
+
+        const [users, session, onboarded] = await Promise.all([
+          getUsers(),
+          getSession(),
+          AsyncStorage.getItem(ONBOARDING_KEY),
+        ]);
 
         if (cancelled) return;
 
-        if (session) {
+        if (!onboarded) {
+          setInitialRoute("Onboarding");
+        } else if (session) {
           const found = users.find((u) => u.id === session.userId) ?? null;
           if (found) {
             setInitialUser(found);
             setInitialRoute(
               found.role === "doctor" ? "DoctorWorkspace" : "PatientCompanion",
             );
+          } else {
+            setInitialRoute("Auth");
           }
+        } else {
+          setInitialRoute("Auth");
         }
       } catch (error) {
         console.error("Boot error:", error);
+        setInitialRoute("Auth");
       } finally {
         if (!cancelled) setIsBooting(false);
       }
@@ -129,6 +144,7 @@ export function AppNavigator() {
         initialRouteName={initialRoute}
         screenOptions={{ headerShown: false, animation: "fade" }}
       >
+        <Stack.Screen name="Onboarding" component={OnboardingScreen} />
         <Stack.Screen name="Auth" component={AuthWrapper} />
         <Stack.Screen
           name="DoctorWorkspace"

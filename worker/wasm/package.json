@@ -1,0 +1,17 @@
+{
+  "name": "tether-biomarker",
+  "type": "module",
+  "version": "0.1.0",
+  "files": [
+    "tether_biomarker_bg.wasm",
+    "tether_biomarker.js",
+    "tether_biomarker_bg.js",
+    "tether_biomarker.d.ts"
+  ],
+  "main": "tether_biomarker.js",
+  "types": "tether_biomarker.d.ts",
+  "sideEffects": [
+    "./tether_biomarker.js",
+    "./snippets/*"
+  ]
+}

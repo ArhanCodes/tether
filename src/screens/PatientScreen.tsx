@@ -15,6 +15,7 @@ import {
 } from "expo-speech-recognition";
 import type { NativeStackScreenProps } from "@react-navigation/native-stack";
 
+import { BiomarkerCard } from "../components/BiomarkerCard";
 import { MessageBubble, type ChatMessage } from "../components/MessageBubble";
 import { SectionCard } from "../components/SectionCard";
 import { SummaryPill } from "../components/SummaryPill";
@@ -28,6 +29,13 @@ import {
 } from "../lib/appData";
 import { quickPrompts, type DoctorPlan, type QuickPromptIntent } from "../lib/showcase";
 import { generateAIReply, generateAIQuickReply } from "../lib/ai";
+import {
+  startBiomarkerRecording,
+  stopAndAnalyze,
+  cancelRecording,
+  isRecording as checkIsRecording,
+  type BiomarkerReport,
+} from "../lib/biomarker";
 import type { RootStackParamList } from "../navigation/AppNavigator";
 
 type Props = NativeStackScreenProps<RootStackParamList, "PatientCompanion">;
@@ -64,6 +72,9 @@ export function PatientScreen({ navigation, route }: Props) {
   const [liveTranscript, setLiveTranscript] = useState("");
   const [voiceError, setVoiceError] = useState<string | null>(null);
   const [isThinking, setIsThinking] = useState(false);
+  const [biomarkerReport, setBiomarkerReport] = useState<BiomarkerReport | null>(null);
+  const [isBiomarkerRecording, setIsBiomarkerRecording] = useState(false);
+  const [isAnalyzing, setIsAnalyzing] = useState(false);
   const finalVoiceTranscriptRef = useRef("");
 
   useEffect(() => {
@@ -97,6 +108,7 @@ export function PatientScreen({ navigation, route }: Props) {
 
     return () => {
       Speech.stop();
+      void cancelRecording();
       try {
         ExpoSpeechRecognitionModule.abort();
       } catch {
@@ -268,6 +280,38 @@ export function PatientScreen({ navigation, route }: Props) {
     }
   }
 
+  async function handleBiomarkerToggle() {
+    if (isBiomarkerRecording) {
+      setIsAnalyzing(true);
+      try {
+        const report = await stopAndAnalyze();
+        if (report) {
+          setBiomarkerReport(report);
+          if (report.status === "alert") {
+            Alert.alert(
+              "Health Alert",
+              report.summary + "\n\nConsider contacting your care team.",
+            );
+          }
+        }
+      } catch (error) {
+        console.error("Biomarker error:", error);
+      } finally {
+        setIsBiomarkerRecording(false);
+        setIsAnalyzing(false);
+      }
+    } else {
+      try {
+        await startBiomarkerRecording();
+        setIsBiomarkerRecording(true);
+        setBiomarkerReport(null);
+      } catch (error) {
+        Alert.alert("Recording Error", "Could not start audio recording.");
+        console.error("Biomarker start error:", error);
+      }
+    }
+  }
+
   async function sendMessageToDoctor(prefill?: string) {
     if (!activePlan) return;
     const body = (prefill ?? careMessageInput).trim();
@@ -430,6 +474,39 @@ export function PatientScreen({ navigation, route }: Props) {
                 </Text>
               </Pressable>
             </View>
+          </SectionCard>
+
+          <SectionCard
+            title="Voice Biomarkers"
+            subtitle="Record a voice sample to analyze breathing, cough patterns, and vocal health."
+          >
+            <View style={styles.buttonRow}>
+              <Pressable
+                style={[
+                  isBiomarkerRecording ? styles.voiceButtonActive : styles.voiceButton,
+                  isAnalyzing && styles.buttonDisabled,
+                ]}
+                onPress={() => void handleBiomarkerToggle()}
+                disabled={isAnalyzing}
+              >
+                <Text style={isBiomarkerRecording ? styles.voiceButtonTextActive : styles.voiceButtonText}>
+                  {isAnalyzing
+                    ? "Analyzing..."
+                    : isBiomarkerRecording
+                      ? "Stop & Analyze"
+                      : "Start Voice Check"}
+                </Text>
+              </Pressable>
+            </View>
+            {isBiomarkerRecording ? (
+              <View style={styles.transcriptCard}>
+                <Text style={styles.transcriptLabel}>Recording</Text>
+                <Text style={styles.transcriptText}>
+                  Speak naturally for 10–15 seconds. Your voice is being recorded for biomarker analysis.
+                </Text>
+              </View>
+            ) : null}
+            {biomarkerReport ? <BiomarkerCard report={biomarkerReport} /> : null}
           </SectionCard>
 
           <SectionCard
@@ -645,6 +722,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
   },
   voiceButtonActive: { backgroundColor: "#1b7662" },
+  buttonDisabled: { opacity: 0.6 },
   voiceButtonText: { color: "#10211d", fontWeight: "800" },
   voiceButtonTextActive: { color: "#f4efe4" },
   messageBubble: { padding: 14, borderRadius: 18 },

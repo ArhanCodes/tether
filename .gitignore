@@ -38,6 +38,9 @@ src/lib/config.ts
 # Worker dependencies
 worker/node_modules/
 
+# Rust build artifacts
+biomarker/target/
+
 # typescript
 *.tsbuildinfo
 
