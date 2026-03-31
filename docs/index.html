@@ -435,23 +435,16 @@
         </ul>
 
         <h3>Setup</h3>
-<pre><code># Clone and install
-git clone https://github.com/ArhanCodes/tether.git
+<pre><code>git clone https://github.com/ArhanCodes/tether.git
 cd tether
 npm install
-
-# Configure API keys
 cp src/lib/config.template.ts src/lib/config.ts
-# Edit src/lib/config.ts with your Worker URL and/or Groq API key
+npm run ios</code></pre>
 
-# Run on iOS
-LANG=en_US.UTF-8 npm run ios
-
-# Run on web
-npx expo start --web</code></pre>
+        <p>That's it. The config template comes pre-configured with the shared Tether API — no API keys or environment variables needed. The Groq key lives on the Cloudflare Worker and is never exposed to the client.</p>
 
         <div class="callout callout-blue">
-          <strong>Note:</strong> <code>src/lib/config.ts</code> is gitignored. Each developer creates their own from the template. Without it, the app falls back to keyword-matching AI responses.
+          <strong>Web preview:</strong> Run <code>npx expo start --web</code> instead to open in a browser.
         </div>
 
         <h3>Worker Setup</h3>

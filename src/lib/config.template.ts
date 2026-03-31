@@ -1,14 +1,12 @@
-// Copy this file to config.ts and fill in your settings.
-// config.ts is gitignored so your secrets stay local.
+// Copy this file to config.ts to enable AI features.
+// config.ts is gitignored so it doesn't conflict across machines.
 //
-// Option A (recommended): Deploy the Cloudflare Worker and set workerUrl.
-//   cd worker && npm install && npx wrangler secret put GROQ_API_KEY && npm run deploy
-//
-// Option B: Set apiKey directly (key lives on device — dev only).
+// The Worker URL below is the shared Tether API — no API key needed.
+// The Groq key lives on the Worker as a Cloudflare secret.
 
 export const AI_CONFIG = {
-  workerUrl: "", // e.g. "https://tether-api.your-subdomain.workers.dev"
-  apiKey: "", // Direct Groq key (fallback if no worker)
+  workerUrl: "https://tether-api.arhan-harchandani.workers.dev",
+  apiKey: "", // Not needed — Worker handles auth
   model: "llama-3.3-70b-versatile",
   maxTokens: 512,
 } as const;
