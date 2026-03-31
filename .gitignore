@@ -35,6 +35,9 @@ yarn-error.*
 # AI config with API keys
 src/lib/config.ts
 
+# Worker dependencies
+worker/node_modules/
+
 # typescript
 *.tsbuildinfo
 

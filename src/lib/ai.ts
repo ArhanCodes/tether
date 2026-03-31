@@ -37,7 +37,51 @@ RULES:
 }`;
 }
 
-async function callGroqAPI(
+function parseAIResponse(text: string): AssistantReply {
+  const jsonMatch = text.match(/\{[\s\S]*\}/);
+  if (!jsonMatch) {
+    throw new Error("Could not parse JSON from AI response");
+  }
+
+  const parsed = JSON.parse(jsonMatch[0]) as AssistantReply;
+  return {
+    message: parsed.message,
+    urgency: parsed.urgency ?? "routine",
+    supportingPoints: parsed.supportingPoints ?? [],
+    handoffSuggested: parsed.handoffSuggested ?? false,
+  };
+}
+
+async function callViaWorker(
+  systemPrompt: string,
+  userMessage: string,
+): Promise<AssistantReply> {
+  const response = await fetch(`${AI_CONFIG.workerUrl}/chat`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      systemPrompt,
+      userMessage,
+      model: AI_CONFIG.model,
+      maxTokens: AI_CONFIG.maxTokens,
+    }),
+  });
+
+  if (!response.ok) {
+    const errorText = await response.text();
+    throw new Error(`Worker error (${response.status}): ${errorText}`);
+  }
+
+  const data = await response.json();
+  const text = data.choices?.[0]?.message?.content;
+  if (!text) {
+    throw new Error("Empty response from worker");
+  }
+
+  return parseAIResponse(text);
+}
+
+async function callGroqDirect(
   systemPrompt: string,
   userMessage: string,
 ): Promise<AssistantReply> {
@@ -68,18 +112,17 @@ async function callGroqAPI(
     throw new Error("Empty response from Groq API");
   }
 
-  const jsonMatch = text.match(/\{[\s\S]*\}/);
-  if (!jsonMatch) {
-    throw new Error("Could not parse JSON from Groq response");
-  }
+  return parseAIResponse(text);
+}
 
-  const parsed = JSON.parse(jsonMatch[0]) as AssistantReply;
-  return {
-    message: parsed.message,
-    urgency: parsed.urgency ?? "routine",
-    supportingPoints: parsed.supportingPoints ?? [],
-    handoffSuggested: parsed.handoffSuggested ?? false,
-  };
+async function callAI(
+  systemPrompt: string,
+  userMessage: string,
+): Promise<AssistantReply> {
+  if (AI_CONFIG.workerUrl) {
+    return callViaWorker(systemPrompt, userMessage);
+  }
+  return callGroqDirect(systemPrompt, userMessage);
 }
 
 export async function generateAIReply(
@@ -92,7 +135,7 @@ export async function generateAIReply(
 
   try {
     const systemPrompt = buildSystemPrompt(plan);
-    return await callGroqAPI(systemPrompt, patientMessage);
+    return await callAI(systemPrompt, patientMessage);
   } catch {
     return fallbackReply(plan, patientMessage);
   }
@@ -109,7 +152,7 @@ export async function generateAIQuickReply(
 
   try {
     const systemPrompt = buildSystemPrompt(plan);
-    return await callGroqAPI(systemPrompt, label);
+    return await callAI(systemPrompt, label);
   } catch {
     return fallbackQuickReply(plan, intent);
   }
