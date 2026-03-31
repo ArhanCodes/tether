@@ -150,21 +150,6 @@ export function AuthScreen({ navigation }: Props) {
 
   return (
     <>
-      <View style={styles.heroCard}>
-        <Text style={styles.kicker}>Tether</Text>
-        <Text style={styles.heroTitle}>
-          Sign in as a doctor or patient and land in the right app instantly.
-        </Text>
-        <Text style={styles.heroText}>
-          Doctors publish recovery plans. Patients receive those plans and can
-          ask the AI for voice or text guidance based on what their doctor entered.
-        </Text>
-        <Text style={styles.heroSubtext}>
-          Built for a clean release-style flow: account creation, role-based
-          routing, in-app AI support, and doctor messaging.
-        </Text>
-      </View>
-
       <SectionCard
         title={authMode === "login" ? "Log In" : "Create Account"}
         subtitle="Choose your role during sign up. After login, Tether routes you to the correct home screen."
@@ -272,37 +257,6 @@ export function AuthScreen({ navigation }: Props) {
 }
 
 const styles = StyleSheet.create({
-  heroCard: {
-    padding: 22,
-    borderRadius: 28,
-    backgroundColor: "#10211d",
-    borderWidth: 1,
-    borderColor: "#1f3d37",
-    gap: 14,
-  },
-  kicker: {
-    color: "#8fd0bf",
-    fontSize: 12,
-    fontWeight: "800",
-    letterSpacing: 2,
-    textTransform: "uppercase",
-  },
-  heroTitle: {
-    color: "#f3f4ef",
-    fontSize: 33,
-    lineHeight: 38,
-    fontWeight: "800",
-  },
-  heroText: {
-    color: "#adc1bb",
-    fontSize: 15,
-    lineHeight: 24,
-  },
-  heroSubtext: {
-    color: "#85a09a",
-    fontSize: 13,
-    lineHeight: 20,
-  },
   roleTabs: {
     flexDirection: "row",
     padding: 6,
