@@ -37,7 +37,7 @@ const Stack = createNativeStackNavigator<RootStackParamList>();
 function ScreenWrapper({ children }: { children: React.ReactNode }) {
   return (
     <SafeAreaView style={styles.safeArea}>
-      <StatusBar style="light" />
+      <StatusBar style="dark" />
       <KeyboardAvoidingView
         behavior={Platform.OS === "ios" ? "padding" : undefined}
         style={styles.keyboard}
@@ -129,9 +129,9 @@ export function AppNavigator() {
   if (isBooting) {
     return (
       <SafeAreaView style={styles.safeArea}>
-        <StatusBar style="light" />
+        <StatusBar style="dark" />
         <View style={styles.loadingWrap}>
-          <ActivityIndicator size="large" color="#e9dcc4" />
+          <ActivityIndicator size="large" color="#3b82f6" />
           <Text style={styles.loadingText}>Loading Tether...</Text>
         </View>
       </SafeAreaView>
@@ -164,7 +164,7 @@ export function AppNavigator() {
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: "#091411",
+    backgroundColor: "#f8fafc",
   },
   keyboard: {
     flex: 1,
@@ -181,7 +181,7 @@ const styles = StyleSheet.create({
     gap: 14,
   },
   loadingText: {
-    color: "#f1e7d5",
+    color: "#64748b",
     fontSize: 16,
     fontWeight: "700",
   },

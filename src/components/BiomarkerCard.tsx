@@ -2,9 +2,9 @@ import { View, Text, StyleSheet } from "react-native";
 import type { BiomarkerReport } from "../lib/biomarker";
 
 const STATUS_COLORS = {
-  normal: { bg: "#cce2d8", text: "#1a5e42" },
-  monitor: { bg: "#ecd49d", text: "#5a4718" },
-  alert: { bg: "#e6b9ae", text: "#7a2e1e" },
+  normal: { bg: "#dcfce7", text: "#166534" },
+  monitor: { bg: "#fef3c7", text: "#92400e" },
+  alert: { bg: "#fee2e2", text: "#991b1b" },
 } as const;
 
 function Metric({ label, value }: { label: string; value: string }) {
@@ -17,14 +17,14 @@ function Metric({ label, value }: { label: string; value: string }) {
 }
 
 export function BiomarkerCard({ report }: { report: BiomarkerReport }) {
-  const colors = STATUS_COLORS[report.status];
+  const statusColors = STATUS_COLORS[report.status];
 
   return (
     <View style={styles.card}>
       <View style={styles.headerRow}>
         <Text style={styles.title}>Voice Biomarkers</Text>
-        <View style={[styles.statusBadge, { backgroundColor: colors.bg }]}>
-          <Text style={[styles.statusText, { color: colors.text }]}>
+        <View style={[styles.statusBadge, { backgroundColor: statusColors.bg }]}>
+          <Text style={[styles.statusText, { color: statusColors.text }]}>
             {report.status.toUpperCase()}
           </Text>
         </View>
@@ -46,9 +46,9 @@ const styles = StyleSheet.create({
   card: {
     padding: 16,
     borderRadius: 20,
-    backgroundColor: "#fbf8ef",
+    backgroundColor: "#ffffff",
     borderWidth: 1,
-    borderColor: "#d8ceb9",
+    borderColor: "#e2e8f0",
     gap: 12,
   },
   headerRow: {
@@ -57,7 +57,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   title: {
-    color: "#10211d",
+    color: "#0f172a",
     fontSize: 17,
     fontWeight: "800",
   },
@@ -72,7 +72,7 @@ const styles = StyleSheet.create({
     letterSpacing: 0.8,
   },
   summary: {
-    color: "#243631",
+    color: "#334155",
     fontSize: 14,
     lineHeight: 21,
   },
@@ -85,10 +85,10 @@ const styles = StyleSheet.create({
     minWidth: "45%",
     padding: 10,
     borderRadius: 14,
-    backgroundColor: "#f2eee3",
+    backgroundColor: "#f8fafc",
   },
   metricLabel: {
-    color: "#697972",
+    color: "#94a3b8",
     fontSize: 10,
     fontWeight: "800",
     letterSpacing: 0.8,
@@ -96,7 +96,7 @@ const styles = StyleSheet.create({
   },
   metricValue: {
     marginTop: 4,
-    color: "#10211d",
+    color: "#0f172a",
     fontSize: 15,
     fontWeight: "700",
   },

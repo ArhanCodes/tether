@@ -23,16 +23,18 @@ const styles = StyleSheet.create({
   sectionCard: {
     padding: 18,
     borderRadius: 26,
-    backgroundColor: "#f2eee3",
+    backgroundColor: "#ffffff",
+    borderWidth: 1,
+    borderColor: "#e2e8f0",
   },
   sectionTitle: {
-    color: "#10211d",
+    color: "#0f172a",
     fontSize: 24,
     fontWeight: "800",
   },
   sectionSubtitle: {
     marginTop: 6,
-    color: "#536760",
+    color: "#64748b",
     fontSize: 14,
     lineHeight: 21,
   },

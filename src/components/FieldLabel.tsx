@@ -6,7 +6,7 @@ export function FieldLabel({ children }: { children: string }) {
 
 const styles = StyleSheet.create({
   fieldLabel: {
-    color: "#31433d",
+    color: "#475569",
     fontSize: 12,
     fontWeight: "800",
     letterSpacing: 1.2,

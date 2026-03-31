@@ -261,7 +261,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     padding: 6,
     borderRadius: 999,
-    backgroundColor: "#e2d9c8",
+    backgroundColor: "#e2e8f0",
     gap: 8,
   },
   roleButton: {
@@ -272,26 +272,26 @@ const styles = StyleSheet.create({
     borderRadius: 999,
   },
   roleButtonActive: {
-    backgroundColor: "#10211d",
+    backgroundColor: "#1d4ed8",
   },
   roleButtonText: {
-    color: "#31443d",
+    color: "#475569",
     fontWeight: "700",
   },
   roleButtonTextActive: {
-    color: "#f7f2e7",
+    color: "#ffffff",
   },
   primaryButton: {
     flex: 1,
     minHeight: 50,
     borderRadius: 16,
-    backgroundColor: "#10211d",
+    backgroundColor: "#1d4ed8",
     alignItems: "center",
     justifyContent: "center",
     paddingHorizontal: 16,
   },
   primaryButtonText: {
-    color: "#f8f7f1",
+    color: "#ffffff",
     fontWeight: "800",
   },
   buttonDisabled: {
@@ -300,17 +300,17 @@ const styles = StyleSheet.create({
   infoCard: {
     padding: 16,
     borderRadius: 18,
-    backgroundColor: "#fbf8ef",
+    backgroundColor: "#eff6ff",
     borderWidth: 1,
-    borderColor: "#d8ceb9",
+    borderColor: "#bfdbfe",
     gap: 6,
   },
   infoCardTitle: {
-    color: "#10211d",
+    color: "#0f172a",
     fontWeight: "800",
   },
   infoCardText: {
-    color: "#41534d",
+    color: "#475569",
     lineHeight: 20,
   },
 });

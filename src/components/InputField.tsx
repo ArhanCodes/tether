@@ -28,7 +28,7 @@ export function InputField({
         value={value}
         onChangeText={onChangeText}
         placeholder={placeholder}
-        placeholderTextColor="#7b8f88"
+        placeholderTextColor="#94a3b8"
         multiline={multiline}
         secureTextEntry={secureTextEntry}
         keyboardType={keyboardType}
@@ -48,12 +48,12 @@ const styles = StyleSheet.create({
   input: {
     minHeight: 52,
     borderRadius: 18,
-    backgroundColor: "#fbf8ef",
+    backgroundColor: "#ffffff",
     borderWidth: 1,
-    borderColor: "#d8ceb9",
+    borderColor: "#e2e8f0",
     paddingHorizontal: 16,
     paddingVertical: 14,
-    color: "#10211d",
+    color: "#0f172a",
     fontSize: 15,
   },
   multilineInput: {

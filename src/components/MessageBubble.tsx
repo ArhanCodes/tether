@@ -67,14 +67,14 @@ const styles = StyleSheet.create({
     borderRadius: 18,
   },
   assistantBubble: {
-    backgroundColor: "#e7f4ef",
+    backgroundColor: "#eff6ff",
     borderWidth: 1,
-    borderColor: "#c7dfd7",
+    borderColor: "#bfdbfe",
   },
   patientBubble: {
-    backgroundColor: "#f0e5d1",
+    backgroundColor: "#f1f5f9",
     borderWidth: 1,
-    borderColor: "#e1d0b2",
+    borderColor: "#e2e8f0",
   },
   messageHeader: {
     flexDirection: "row",
@@ -83,18 +83,18 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   messageRole: {
-    color: "#10211d",
+    color: "#0f172a",
     fontWeight: "800",
   },
   messageText: {
     marginTop: 8,
-    color: "#243631",
+    color: "#334155",
     fontSize: 15,
     lineHeight: 23,
   },
   handoffHint: {
     marginTop: 10,
-    color: "#7f5c14",
+    color: "#92400e",
     fontSize: 13,
     lineHeight: 19,
     fontWeight: "700",
@@ -105,16 +105,16 @@ const styles = StyleSheet.create({
     borderRadius: 999,
   },
   urgentBadge: {
-    backgroundColor: "#e6b9ae",
+    backgroundColor: "#fee2e2",
   },
   warningBadge: {
-    backgroundColor: "#ecd49d",
+    backgroundColor: "#fef3c7",
   },
   routineBadge: {
-    backgroundColor: "#cce2d8",
+    backgroundColor: "#dbeafe",
   },
   urgencyText: {
-    color: "#10211d",
+    color: "#0f172a",
     fontSize: 11,
     fontWeight: "800",
     textTransform: "uppercase",
