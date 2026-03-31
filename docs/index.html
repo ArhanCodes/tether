@@ -1,0 +1,726 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Tether Docs</title>
+  <style>
+    :root {
+      --blue-700: #1d4ed8;
+      --blue-600: #2563eb;
+      --blue-500: #3b82f6;
+      --blue-100: #dbeafe;
+      --blue-50: #eff6ff;
+      --slate-900: #0f172a;
+      --slate-700: #334155;
+      --slate-600: #475569;
+      --slate-500: #64748b;
+      --slate-400: #94a3b8;
+      --slate-200: #e2e8f0;
+      --slate-100: #f1f5f9;
+      --slate-50: #f8fafc;
+      --green-600: #16a34a;
+      --green-100: #dcfce7;
+      --amber-600: #d97706;
+      --amber-100: #fef3c7;
+      --red-600: #dc2626;
+      --red-100: #fee2e2;
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      color: var(--slate-700);
+      background: var(--slate-50);
+      line-height: 1.7;
+    }
+
+    /* Sidebar */
+    .layout {
+      display: flex;
+      min-height: 100vh;
+    }
+
+    .sidebar {
+      width: 260px;
+      background: white;
+      border-right: 1px solid var(--slate-200);
+      padding: 24px 0;
+      position: fixed;
+      top: 0;
+      left: 0;
+      bottom: 0;
+      overflow-y: auto;
+      z-index: 10;
+    }
+
+    .sidebar-logo {
+      padding: 0 24px 20px;
+      border-bottom: 1px solid var(--slate-200);
+      margin-bottom: 16px;
+    }
+
+    .sidebar-logo h1 {
+      font-size: 20px;
+      font-weight: 800;
+      color: var(--blue-700);
+      letter-spacing: -0.5px;
+    }
+
+    .sidebar-logo span {
+      font-size: 12px;
+      color: var(--slate-400);
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+
+    .sidebar nav { padding: 0 12px; }
+
+    .sidebar a {
+      display: block;
+      padding: 8px 12px;
+      color: var(--slate-600);
+      text-decoration: none;
+      font-size: 14px;
+      font-weight: 500;
+      border-radius: 8px;
+      transition: all 0.15s;
+    }
+
+    .sidebar a:hover {
+      background: var(--blue-50);
+      color: var(--blue-700);
+    }
+
+    .sidebar .nav-section {
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 1.2px;
+      color: var(--slate-400);
+      padding: 16px 12px 6px;
+    }
+
+    /* Main */
+    .main {
+      margin-left: 260px;
+      flex: 1;
+      max-width: 840px;
+      padding: 48px 48px 96px;
+    }
+
+    /* Hero */
+    .hero {
+      background: var(--blue-700);
+      border-radius: 20px;
+      padding: 48px;
+      margin-bottom: 48px;
+      color: white;
+    }
+
+    .hero h1 {
+      font-size: 36px;
+      font-weight: 800;
+      letter-spacing: -1px;
+      margin-bottom: 12px;
+    }
+
+    .hero p {
+      font-size: 17px;
+      line-height: 1.7;
+      color: var(--blue-100);
+      max-width: 600px;
+    }
+
+    .hero-badges {
+      display: flex;
+      gap: 8px;
+      margin-top: 20px;
+      flex-wrap: wrap;
+    }
+
+    .badge {
+      display: inline-block;
+      padding: 4px 12px;
+      border-radius: 999px;
+      font-size: 12px;
+      font-weight: 700;
+    }
+
+    .badge-blue { background: rgba(255,255,255,0.15); color: white; }
+    .badge-green { background: var(--green-100); color: var(--green-600); }
+    .badge-amber { background: var(--amber-100); color: var(--amber-600); }
+
+    /* Sections */
+    section {
+      margin-bottom: 48px;
+    }
+
+    h2 {
+      font-size: 26px;
+      font-weight: 800;
+      color: var(--slate-900);
+      letter-spacing: -0.5px;
+      margin-bottom: 16px;
+      padding-bottom: 12px;
+      border-bottom: 2px solid var(--slate-200);
+    }
+
+    h3 {
+      font-size: 18px;
+      font-weight: 700;
+      color: var(--slate-900);
+      margin: 24px 0 10px;
+    }
+
+    p { margin-bottom: 12px; }
+
+    ul, ol {
+      margin: 0 0 16px 20px;
+    }
+
+    li {
+      margin-bottom: 6px;
+    }
+
+    /* Cards */
+    .card-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+      margin: 16px 0;
+    }
+
+    .card {
+      background: white;
+      border: 1px solid var(--slate-200);
+      border-radius: 16px;
+      padding: 20px;
+    }
+
+    .card h4 {
+      font-size: 15px;
+      font-weight: 700;
+      color: var(--slate-900);
+      margin-bottom: 8px;
+    }
+
+    .card p {
+      font-size: 14px;
+      color: var(--slate-600);
+      margin: 0;
+    }
+
+    .card-icon {
+      width: 36px;
+      height: 36px;
+      border-radius: 10px;
+      background: var(--blue-100);
+      color: var(--blue-700);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 800;
+      font-size: 16px;
+      margin-bottom: 12px;
+    }
+
+    /* Code */
+    code {
+      background: var(--slate-100);
+      padding: 2px 7px;
+      border-radius: 6px;
+      font-size: 13px;
+      font-family: "SF Mono", "Fira Code", monospace;
+      color: var(--blue-700);
+    }
+
+    pre {
+      background: var(--slate-900);
+      color: #e2e8f0;
+      padding: 20px;
+      border-radius: 14px;
+      overflow-x: auto;
+      margin: 16px 0;
+      font-size: 13px;
+      line-height: 1.7;
+    }
+
+    pre code {
+      background: none;
+      color: inherit;
+      padding: 0;
+    }
+
+    /* Table */
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 16px 0;
+      font-size: 14px;
+    }
+
+    th {
+      text-align: left;
+      padding: 10px 16px;
+      background: var(--slate-100);
+      font-weight: 700;
+      color: var(--slate-900);
+      border-bottom: 2px solid var(--slate-200);
+    }
+
+    td {
+      padding: 10px 16px;
+      border-bottom: 1px solid var(--slate-200);
+    }
+
+    /* Callout */
+    .callout {
+      padding: 16px 20px;
+      border-radius: 12px;
+      margin: 16px 0;
+      font-size: 14px;
+    }
+
+    .callout-blue {
+      background: var(--blue-50);
+      border-left: 4px solid var(--blue-500);
+      color: var(--slate-700);
+    }
+
+    .callout-amber {
+      background: var(--amber-100);
+      border-left: 4px solid var(--amber-600);
+      color: var(--slate-700);
+    }
+
+    .callout strong { color: var(--slate-900); }
+
+    /* Diagram */
+    .arch-diagram {
+      background: white;
+      border: 1px solid var(--slate-200);
+      border-radius: 16px;
+      padding: 32px;
+      margin: 20px 0;
+      font-family: "SF Mono", "Fira Code", monospace;
+      font-size: 13px;
+      line-height: 1.8;
+      white-space: pre;
+      overflow-x: auto;
+      color: var(--slate-700);
+    }
+
+    /* Responsive */
+    @media (max-width: 900px) {
+      .sidebar { display: none; }
+      .main { margin-left: 0; padding: 24px; }
+      .card-grid { grid-template-columns: 1fr; }
+      .hero { padding: 32px; }
+      .hero h1 { font-size: 28px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="layout">
+    <aside class="sidebar">
+      <div class="sidebar-logo">
+        <h1>Tether</h1>
+        <span>Documentation</span>
+      </div>
+      <nav>
+        <div class="nav-section">Getting Started</div>
+        <a href="#overview">Overview</a>
+        <a href="#architecture">Architecture</a>
+        <a href="#quickstart">Quickstart</a>
+
+        <div class="nav-section">Features</div>
+        <a href="#auth">Authentication</a>
+        <a href="#doctor">Doctor Workspace</a>
+        <a href="#patient">Patient Companion</a>
+        <a href="#ai">AI Chat</a>
+        <a href="#biomarker">Voice Biomarkers</a>
+        <a href="#onboarding">Onboarding</a>
+
+        <div class="nav-section">Infrastructure</div>
+        <a href="#worker">Cloudflare Worker</a>
+        <a href="#wasm">Rust WASM Engine</a>
+        <a href="#security">Security</a>
+
+        <div class="nav-section">Reference</div>
+        <a href="#tech-stack">Tech Stack</a>
+        <a href="#api">API Endpoints</a>
+        <a href="#biomarker-metrics">Biomarker Metrics</a>
+      </nav>
+    </aside>
+
+    <main class="main">
+      <!-- Hero -->
+      <div class="hero" id="overview">
+        <h1>Tether</h1>
+        <p>
+          A clinical companion app that connects post-discharge patients with their healthcare providers through AI-powered guidance, voice biomarker analysis, and secure messaging.
+        </p>
+        <div class="hero-badges">
+          <span class="badge badge-blue">React Native</span>
+          <span class="badge badge-blue">Expo SDK 55</span>
+          <span class="badge badge-blue">Cloudflare Workers</span>
+          <span class="badge badge-blue">Rust WASM</span>
+          <span class="badge badge-blue">Groq LLM</span>
+        </div>
+      </div>
+
+      <!-- Architecture -->
+      <section id="architecture">
+        <h2>Architecture</h2>
+        <p>
+          Tether follows a privacy-first architecture. API keys never ship in the mobile bundle — all LLM requests and biomarker analysis are proxied through a Cloudflare Worker at the edge.
+        </p>
+        <div class="arch-diagram">┌─────────────────────────────────────┐
+│         Mobile App (Expo)           │
+│                                     │
+│  Auth ─→ Doctor / Patient screens   │
+│  Voice ─→ expo-speech-recognition   │
+│  Audio ─→ expo-audio recording      │
+│  Storage ─→ AsyncStorage (local)    │
+└──────────┬──────────┬───────────────┘
+           │          │
+     AI chat     Voice samples
+           │          │
+           ▼          ▼
+┌─────────────────────────────────────┐
+│     Cloudflare Worker (Edge)        │
+│                                     │
+│  /chat ──→ Groq API (LLaMA 3.3)    │
+│  /analyze → Rust WASM biomarker     │
+│                                     │
+│  API keys stored as CF secrets      │
+└─────────────────────────────────────┘</div>
+
+        <div class="card-grid">
+          <div class="card">
+            <div class="card-icon">F</div>
+            <h4>Frontend</h4>
+            <p>React Native + Expo SDK 55 with React Navigation native stack. Runs on iOS, Android, and web.</p>
+          </div>
+          <div class="card">
+            <div class="card-icon">B</div>
+            <h4>Backend</h4>
+            <p>Cloudflare Worker proxies all API calls. GROQ_API_KEY stored as a Cloudflare secret, never exposed to the client.</p>
+          </div>
+          <div class="card">
+            <div class="card-icon">R</div>
+            <h4>Rust WASM</h4>
+            <p>Voice biomarker engine compiled to WebAssembly via wasm-pack. Runs inside the Worker for edge-speed signal processing.</p>
+          </div>
+          <div class="card">
+            <div class="card-icon">AI</div>
+            <h4>LLM</h4>
+            <p>Groq API with LLaMA 3.3 70B. Graceful fallback chain: Worker → direct → keyword matching.</p>
+          </div>
+        </div>
+      </section>
+
+      <!-- Quickstart -->
+      <section id="quickstart">
+        <h2>Quickstart</h2>
+        <h3>Prerequisites</h3>
+        <ul>
+          <li>Node.js 18+</li>
+          <li>Expo CLI (<code>npm install -g expo-cli</code>)</li>
+          <li>iOS Simulator (Xcode) or Android Emulator</li>
+          <li>Rust + wasm-pack (for biomarker engine development)</li>
+        </ul>
+
+        <h3>Setup</h3>
+<pre><code># Clone and install
+git clone https://github.com/ArhanCodes/tether.git
+cd tether
+npm install
+
+# Configure API keys
+cp src/lib/config.template.ts src/lib/config.ts
+# Edit src/lib/config.ts with your Worker URL and/or Groq API key
+
+# Run on iOS
+LANG=en_US.UTF-8 npm run ios
+
+# Run on web
+npx expo start --web</code></pre>
+
+        <div class="callout callout-blue">
+          <strong>Note:</strong> <code>src/lib/config.ts</code> is gitignored. Each developer creates their own from the template. Without it, the app falls back to keyword-matching AI responses.
+        </div>
+
+        <h3>Worker Setup</h3>
+<pre><code># Deploy the Cloudflare Worker
+cd worker
+npm install
+npx wrangler secret put GROQ_API_KEY
+npx wrangler deploy</code></pre>
+      </section>
+
+      <!-- Auth -->
+      <section id="auth">
+        <h2>Authentication</h2>
+        <p>
+          Users sign up with a role (Doctor or Patient) and are routed to the appropriate workspace after login. Sessions persist across app restarts via AsyncStorage.
+        </p>
+        <ul>
+          <li><strong>Password hashing:</strong> SHA-256 via <code>expo-crypto</code> — plaintext passwords are never stored</li>
+          <li><strong>Session restore:</strong> On launch, the app checks AsyncStorage for an active session and skips login if found</li>
+          <li><strong>Role-based routing:</strong> Doctors see the workspace; patients see the companion</li>
+          <li><strong>Validation:</strong> Email format, password strength (8+ chars with a number), and terms acceptance</li>
+        </ul>
+      </section>
+
+      <!-- Doctor -->
+      <section id="doctor">
+        <h2>Doctor Workspace</h2>
+        <p>
+          Doctors create, edit, and publish recovery plans for specific patients. Plans are the foundation of the entire patient experience — the AI, the UI, and the messaging system all derive from the published plan.
+        </p>
+        <h3>Plan Fields</h3>
+        <table>
+          <tr><th>Field</th><th>Description</th></tr>
+          <tr><td>Patient Name & Email</td><td>Must match a registered patient account</td></tr>
+          <tr><td>Diagnosis</td><td>Primary condition (e.g. post-discharge pneumonia)</td></tr>
+          <tr><td>Vitals</td><td>Heart rate, blood pressure, temperature, O2 saturation</td></tr>
+          <tr><td>Medications</td><td>Name, dosage, and frequency (one per line)</td></tr>
+          <tr><td>Daily Instructions</td><td>What the patient should do each day</td></tr>
+          <tr><td>Red Flags</td><td>Symptoms that require immediate medical attention</td></tr>
+          <tr><td>Follow-up</td><td>Next appointment or scheduled check-in</td></tr>
+          <tr><td>Tone</td><td>Calm, Direct, or Reassuring — controls AI personality</td></tr>
+          <tr><td>Doctor Notes</td><td>Private instructions for how AI should phrase answers</td></tr>
+        </table>
+
+        <h3>Messaging</h3>
+        <p>
+          Doctors see all patient message threads, sorted by most recent. They can select a thread and reply directly. When a patient sends a message (or the AI suggests a handoff), it appears here.
+        </p>
+      </section>
+
+      <!-- Patient -->
+      <section id="patient">
+        <h2>Patient Companion</h2>
+        <p>
+          The patient screen surfaces the published recovery plan and provides multiple channels for getting help: AI chat, voice input, quick prompts, biomarker analysis, and direct doctor messaging.
+        </p>
+
+        <div class="card-grid">
+          <div class="card">
+            <h4>Care Plan Display</h4>
+            <p>Vitals, daily instructions, medications, and red flags — all from the doctor's published plan.</p>
+          </div>
+          <div class="card">
+            <h4>AI Chat</h4>
+            <p>Text or voice questions answered by LLaMA 3.3, constrained to the care plan. Includes urgency badges and handoff suggestions.</p>
+          </div>
+          <div class="card">
+            <h4>Voice Biomarkers</h4>
+            <p>Record a 10-15 second voice sample. Rust WASM engine analyzes breathing rate, cough events, pitch variability, and more.</p>
+          </div>
+          <div class="card">
+            <h4>Doctor Messaging</h4>
+            <p>Direct messaging channel for when AI isn't enough. The AI can auto-suggest using this when it lacks certainty.</p>
+          </div>
+        </div>
+      </section>
+
+      <!-- AI -->
+      <section id="ai">
+        <h2>AI Chat System</h2>
+        <p>
+          The AI is powered by Groq's LLaMA 3.3 70B model, accessed through a Cloudflare Worker proxy. Every response is grounded in the doctor's published care plan.
+        </p>
+
+        <h3>System Prompt</h3>
+        <p>
+          A dynamic system prompt is built from the care plan that includes the patient's diagnosis, medications, instructions, red flags, and the doctor's preferred tone. The AI is instructed to:
+        </p>
+        <ul>
+          <li>Only answer from documented care plan data</li>
+          <li>Flag red-flag symptoms as <code>"urgent"</code></li>
+          <li>Suggest messaging the doctor when information is missing</li>
+          <li>Return structured JSON with message, urgency, supporting points, and handoff flag</li>
+        </ul>
+
+        <h3>Response Urgency Levels</h3>
+        <table>
+          <tr><th>Level</th><th>Meaning</th><th>UI Treatment</th></tr>
+          <tr><td><code>routine</code></td><td>Normal informational response</td><td>Blue badge</td></tr>
+          <tr><td><code>contact-clinician</code></td><td>AI suggests speaking with doctor</td><td>Yellow badge</td></tr>
+          <tr><td><code>urgent</code></td><td>Red flag symptom detected</td><td>Red badge + escalation banner</td></tr>
+        </table>
+
+        <h3>Fallback Chain</h3>
+<pre><code>1. Cloudflare Worker → Groq API (primary)
+2. Direct Groq API call (if worker fails)
+3. Keyword matching (if no API configured)</code></pre>
+
+        <div class="callout callout-amber">
+          <strong>Safety:</strong> The AI never diagnoses, prescribes, or advises outside the doctor's documented scope. Emergency symptoms always trigger an urgent flag with instructions to seek immediate care.
+        </div>
+      </section>
+
+      <!-- Biomarker -->
+      <section id="biomarker">
+        <h2>Voice Biomarkers</h2>
+        <p>
+          Tether's biomarker system records a short voice sample from the patient, extracts PCM audio data, and sends it to a Rust WASM engine running on the Cloudflare Worker for real-time signal processing.
+        </p>
+
+        <h3>How It Works</h3>
+        <ol>
+          <li>Patient taps "Start Voice Check" — <code>expo-audio</code> begins recording in WAV/PCM format at 16kHz</li>
+          <li>Patient speaks naturally for 10-15 seconds, then taps "Stop & Analyze"</li>
+          <li>Recording is read as an ArrayBuffer, PCM samples extracted from WAV headers</li>
+          <li>Samples sent to Worker's <code>/analyze</code> endpoint as JSON</li>
+          <li>Rust WASM engine processes samples and returns a <code>BiomarkerReport</code></li>
+          <li>Results displayed as a card with status badge (normal / monitor / alert)</li>
+        </ol>
+      </section>
+
+      <!-- Worker -->
+      <section id="worker">
+        <h2>Cloudflare Worker</h2>
+        <p>The Worker serves as the secure API proxy between the mobile app and external services. It exposes two endpoints:</p>
+
+        <h3 id="api">API Endpoints</h3>
+        <table>
+          <tr><th>Endpoint</th><th>Method</th><th>Description</th></tr>
+          <tr><td><code>/chat</code></td><td>POST</td><td>Forwards chat messages to Groq API with the GROQ_API_KEY secret</td></tr>
+          <tr><td><code>/analyze</code></td><td>POST</td><td>Receives PCM audio samples, runs Rust WASM biomarker analysis, returns report</td></tr>
+        </table>
+
+        <h3>Chat Request</h3>
+<pre><code>POST /chat
+Content-Type: application/json
+
+{
+  "messages": [
+    { "role": "system", "content": "..." },
+    { "role": "user", "content": "What should I do today?" }
+  ]
+}</code></pre>
+
+        <h3>Analyze Request</h3>
+<pre><code>POST /analyze
+Content-Type: application/json
+
+{
+  "samples": [0, 120, -340, ...],  // Int16 PCM samples
+  "sampleRate": 16000
+}</code></pre>
+      </section>
+
+      <!-- WASM -->
+      <section id="wasm">
+        <h2>Rust WASM Engine</h2>
+        <p>
+          The biomarker engine is written in Rust, compiled to WebAssembly via <code>wasm-pack</code>, and loaded as an ES module inside the Cloudflare Worker. This gives near-native signal processing performance at the edge.
+        </p>
+
+        <h3>Entry Point</h3>
+<pre><code>pub fn analyze_audio(samples_i16: &[i16], sample_rate: u32) -> String</code></pre>
+        <p>Accepts raw PCM samples and sample rate. Returns a JSON-encoded <code>BiomarkerReport</code>.</p>
+
+        <h3>Signal Processing Pipeline</h3>
+        <ul>
+          <li><strong>RMS Energy</strong> — Root mean square of normalized samples. Detects fatigue (low energy)</li>
+          <li><strong>Zero-Crossing Rate</strong> — Frequency of sign changes. Detects breathy/labored speech</li>
+          <li><strong>Breathing Rate</strong> — Low-pass filtered energy envelope, peak counting. Estimates breaths per minute</li>
+          <li><strong>Pitch Variability</strong> — Autocorrelation-based pitch detection, coefficient of variation. Detects vocal tremor</li>
+          <li><strong>Cough Detection</strong> — Sharp energy spikes (>3x mean) followed by silence. Counts distinct cough events</li>
+        </ul>
+
+        <h3>Building</h3>
+<pre><code>cd biomarker
+wasm-pack build --target web --out-dir ../worker/wasm
+# Output: tether_biomarker_bg.wasm (~49KB) + JS bindings</code></pre>
+      </section>
+
+      <!-- Biomarker Metrics -->
+      <section id="biomarker-metrics">
+        <h2>Biomarker Metrics Reference</h2>
+        <table>
+          <tr><th>Metric</th><th>Range</th><th>Flag Threshold</th><th>Clinical Significance</th></tr>
+          <tr><td>Energy (RMS)</td><td>0 – 1</td><td>&lt; 0.02</td><td>Low energy suggests fatigue or weakness</td></tr>
+          <tr><td>Zero-Crossing Rate</td><td>0 – 1</td><td>&gt; 0.3</td><td>High ZCR indicates breathy or labored speech</td></tr>
+          <tr><td>Breathing Rate</td><td>BPM</td><td>&gt; 24</td><td>Tachypnea — elevated respiratory rate</td></tr>
+          <tr><td>Pitch Variability</td><td>CV</td><td>&gt; 0.35</td><td>High variation suggests vocal tremor</td></tr>
+          <tr><td>Cough Events</td><td>Count</td><td>&ge; 3</td><td>Frequent coughing in a short sample</td></tr>
+        </table>
+
+        <h3>Status Logic</h3>
+        <table>
+          <tr><th>Flags Triggered</th><th>Status</th><th>Meaning</th></tr>
+          <tr><td>0</td><td><span class="badge badge-green">Normal</span></td><td>No concerning patterns detected</td></tr>
+          <tr><td>1</td><td><span class="badge badge-amber">Monitor</span></td><td>One metric outside normal range — worth watching</td></tr>
+          <tr><td>2+</td><td><span style="background: var(--red-100); color: var(--red-600); display: inline-block; padding: 4px 12px; border-radius: 999px; font-size: 12px; font-weight: 700;">Alert</span></td><td>Multiple flags — consider contacting care team</td></tr>
+        </table>
+      </section>
+
+      <!-- Security -->
+      <section id="security">
+        <h2>Security</h2>
+        <div class="card-grid">
+          <div class="card">
+            <h4>API Key Isolation</h4>
+            <p>GROQ_API_KEY is a Cloudflare secret. It never appears in the mobile bundle, git history, or client-side code.</p>
+          </div>
+          <div class="card">
+            <h4>Password Hashing</h4>
+            <p>SHA-256 via expo-crypto. Plaintext passwords are never stored or compared directly.</p>
+          </div>
+          <div class="card">
+            <h4>Config Gitignore</h4>
+            <p><code>src/lib/config.ts</code> is gitignored. A template file is committed for new developers to copy.</p>
+          </div>
+          <div class="card">
+            <h4>CORS</h4>
+            <p>Worker includes CORS headers on all responses, allowing requests from the mobile app and web preview.</p>
+          </div>
+        </div>
+      </section>
+
+      <!-- Tech Stack -->
+      <section id="tech-stack">
+        <h2>Tech Stack</h2>
+        <table>
+          <tr><th>Layer</th><th>Technology</th></tr>
+          <tr><td>Mobile App</td><td>React Native 0.83, Expo SDK 55, React 19</td></tr>
+          <tr><td>Navigation</td><td>@react-navigation/native (native stack)</td></tr>
+          <tr><td>Audio</td><td>expo-audio, expo-speech, expo-speech-recognition</td></tr>
+          <tr><td>Crypto</td><td>expo-crypto (SHA-256)</td></tr>
+          <tr><td>Storage</td><td>@react-native-async-storage/async-storage</td></tr>
+          <tr><td>Backend</td><td>Cloudflare Workers (TypeScript)</td></tr>
+          <tr><td>AI Model</td><td>Groq API — LLaMA 3.3 70B Versatile</td></tr>
+          <tr><td>Signal Processing</td><td>Rust + WebAssembly (wasm-pack)</td></tr>
+          <tr><td>Serialization</td><td>Serde (Rust), JSON (TypeScript)</td></tr>
+        </table>
+      </section>
+
+      <!-- Onboarding -->
+      <section id="onboarding">
+        <h2>Onboarding</h2>
+        <p>
+          First-time users see a 5-step tutorial before reaching the login screen. The tutorial covers:
+        </p>
+        <ol>
+          <li><strong>Welcome</strong> — What Tether does and who it's for</li>
+          <li><strong>For Doctors</strong> — How to create and publish recovery plans</li>
+          <li><strong>For Patients</strong> — How to use AI chat, voice, and messaging</li>
+          <li><strong>Voice Biomarkers</strong> — How voice analysis works and what it detects</li>
+          <li><strong>Safety First</strong> — Tether is not a replacement for emergency care</li>
+        </ol>
+        <p>
+          Onboarding completion is stored in AsyncStorage under the key <code>tether-onboarding-complete</code>. The tutorial only shows once.
+        </p>
+      </section>
+    </main>
+  </div>
+</body>
+</html>
