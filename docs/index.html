@@ -337,6 +337,7 @@
         <a href="#quickstart">Quickstart</a>
 
         <div class="nav-section">Features</div>
+        <a href="#features" style="font-weight:700;color:var(--blue-700)">Features Overview</a>
         <a href="#auth">Authentication</a>
         <a href="#doctor">Doctor Workspace</a>
         <a href="#patient">Patient Companion</a>
@@ -453,6 +454,57 @@ cd worker
 npm install
 npx wrangler secret put GROQ_API_KEY
 npx wrangler deploy</code></pre>
+      </section>
+
+      <!-- Features -->
+      <section id="features">
+        <h2 style="font-size:30px;border-bottom:3px solid var(--blue-700);color:var(--blue-700)">Features</h2>
+
+        <h3>Auth</h3>
+        <ul>
+          <li>Login / signup with role selection (doctor or patient)</li>
+          <li>Passwords hashed with SHA-256 (expo-crypto)</li>
+          <li>Session persistence — reopening the app skips login</li>
+          <li>Terms/privacy consent on signup</li>
+        </ul>
+
+        <h3>Doctor Workspace</h3>
+        <ul>
+          <li>Create/edit patient recovery plans (diagnosis, vitals, meds, instructions, red flags, follow-up)</li>
+          <li>Set AI tone (calm, direct, reassuring)</li>
+          <li>Publish plans to a specific patient email (validates account exists)</li>
+          <li>Draft auto-saves locally</li>
+          <li>View and reply to patient messages</li>
+        </ul>
+
+        <h3>Patient Companion</h3>
+        <ul>
+          <li>View the recovery plan assigned to your email</li>
+          <li>Vitals summary, daily instructions, red flags</li>
+          <li>AI chat powered by <a href="https://groq.com/" style="color:var(--blue-600)">Groq</a> with keyword-matching fallback</li>
+          <li>Quick prompt buttons ("What should I do today?", "When should I call?", etc.)</li>
+          <li>Voice input via speech recognition</li>
+          <li>Voice output (text-to-speech on AI replies, toggleable)</li>
+          <li>Urgency badges on AI responses (routine / contact clinician / urgent)</li>
+          <li>Handoff suggestion when AI can't fully answer</li>
+          <li>Direct messaging to doctor</li>
+          <li>Voice biomarker analysis (breathing rate, cough detection, vocal tremor, voice energy)</li>
+          <li>Biomarker status levels (normal / monitor / alert) with alert popup</li>
+        </ul>
+
+        <h3>Onboarding</h3>
+        <ul>
+          <li>5-step tutorial on first launch (welcome, doctors, patients, voice biomarkers, safety)</li>
+          <li>Skip button and dot indicators</li>
+          <li>Only shows once (stored in AsyncStorage)</li>
+        </ul>
+
+        <h3>Infrastructure</h3>
+        <ul>
+          <li>Cloudflare Worker proxy — API key stays server-side, never ships in the app</li>
+          <li>Rust WASM biomarker engine runs at the edge inside the worker</li>
+          <li>AI requests routed through worker, falls back to direct Groq, then keyword matching</li>
+        </ul>
       </section>
 
       <!-- Auth -->
