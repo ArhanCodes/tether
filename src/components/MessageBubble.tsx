@@ -1,5 +1,6 @@
 import { View, Text, StyleSheet } from "react-native";
 import type { AssistantUrgency } from "../lib/showcase";
+import { fleschKincaidGradeLevel, readabilityLabel } from "../lib/readability";
 
 export type ChatMessage = {
   id: string;
@@ -23,6 +24,8 @@ function urgencyLabel(urgency?: AssistantUrgency): string {
 
 export function MessageBubble({ message }: { message: ChatMessage }) {
   const isAssistant = message.role === "assistant";
+  const grade = isAssistant ? fleschKincaidGradeLevel(message.text) : null;
+  const gradeLabel = grade !== null ? readabilityLabel(grade) : null;
 
   return (
     <View
@@ -35,20 +38,29 @@ export function MessageBubble({ message }: { message: ChatMessage }) {
         <Text style={styles.messageRole}>
           {isAssistant ? "Tether AI" : "Patient"}
         </Text>
-        {isAssistant ? (
-          <View
-            style={[
-              styles.urgencyBadge,
-              message.urgency === "urgent"
-                ? styles.urgentBadge
-                : message.urgency === "contact-clinician"
-                  ? styles.warningBadge
-                  : styles.routineBadge,
-            ]}
-          >
-            <Text style={styles.urgencyText}>{urgencyLabel(message.urgency)}</Text>
-          </View>
-        ) : null}
+        <View style={styles.badgeRow}>
+          {isAssistant && grade !== null ? (
+            <View style={[styles.readabilityBadge, grade <= 6 ? styles.readabilityGood : grade <= 10 ? styles.readabilityOk : styles.readabilityHigh]}>
+              <Text style={styles.readabilityText}>
+                Grade {grade} · {gradeLabel}
+              </Text>
+            </View>
+          ) : null}
+          {isAssistant ? (
+            <View
+              style={[
+                styles.urgencyBadge,
+                message.urgency === "urgent"
+                  ? styles.urgentBadge
+                  : message.urgency === "contact-clinician"
+                    ? styles.warningBadge
+                    : styles.routineBadge,
+              ]}
+            >
+              <Text style={styles.urgencyText}>{urgencyLabel(message.urgency)}</Text>
+            </View>
+          ) : null}
+        </View>
       </View>
       <Text style={styles.messageText}>{message.text}</Text>
       {message.role === "assistant" && message.handoffSuggested ? (
@@ -81,10 +93,16 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     alignItems: "center",
     gap: 8,
+    flexWrap: "wrap",
   },
   messageRole: {
     color: "#0f172a",
     fontWeight: "800",
+  },
+  badgeRow: {
+    flexDirection: "row",
+    gap: 6,
+    flexWrap: "wrap",
   },
   messageText: {
     marginTop: 8,
@@ -119,5 +137,25 @@ const styles = StyleSheet.create({
     fontWeight: "800",
     textTransform: "uppercase",
     letterSpacing: 0.8,
+  },
+  readabilityBadge: {
+    paddingHorizontal: 8,
+    paddingVertical: 5,
+    borderRadius: 999,
+  },
+  readabilityGood: {
+    backgroundColor: "#dcfce7",
+  },
+  readabilityOk: {
+    backgroundColor: "#fef3c7",
+  },
+  readabilityHigh: {
+    backgroundColor: "#fee2e2",
+  },
+  readabilityText: {
+    color: "#0f172a",
+    fontSize: 10,
+    fontWeight: "700",
+    letterSpacing: 0.5,
   },
 });

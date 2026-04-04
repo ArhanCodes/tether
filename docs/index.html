@@ -343,10 +343,14 @@
         <a href="#patient">Patient Companion</a>
         <a href="#ai">AI Chat</a>
         <a href="#biomarker">Voice Biomarkers</a>
+        <a href="#engine-connection">Engine Connection</a>
+        <a href="#readability">Readability Scoring</a>
+        <a href="#multilingual">Multilingual</a>
         <a href="#onboarding">Onboarding</a>
 
         <div class="nav-section">Infrastructure</div>
         <a href="#worker">Cloudflare Worker</a>
+        <a href="#durable-objects">Durable Objects</a>
         <a href="#wasm">Rust WASM Engine</a>
         <a href="#security">Security</a>
 
@@ -565,10 +569,14 @@ npx wrangler deploy</code></pre>
           <li>Voice input via speech recognition</li>
           <li>Voice output (text-to-speech on AI replies, toggleable)</li>
           <li>Urgency badges on AI responses (routine / contact clinician / urgent)</li>
+          <li><strong>Flesch-Kincaid readability score</strong> on every AI response (grade level badge)</li>
           <li>Handoff suggestion when AI can't fully answer</li>
-          <li>Direct messaging to doctor</li>
+          <li>Direct messaging to doctor (real-time via Durable Objects)</li>
+          <li><strong>Multilingual support</strong> (English, Spanish, Hindi, Mandarin, French, Arabic)</li>
           <li>Voice biomarker analysis (breathing rate, cough detection, vocal tremor, voice energy)</li>
           <li>Biomarker status levels (normal / monitor / alert) with alert popup</li>
+          <li><strong>Biomarker trending</strong> — historical chart showing trends over time</li>
+          <li><strong>Engine connection</strong> — biomarker data injected into AI context automatically</li>
         </ul>
 
         <h3>Onboarding</h3>
@@ -581,6 +589,7 @@ npx wrangler deploy</code></pre>
         <h3>Infrastructure</h3>
         <ul>
           <li>Cloudflare Worker proxy — API key stays server-side, never ships in the app</li>
+          <li><strong>Durable Objects backend</strong> — accounts, plans, messages, biomarker history persist across devices</li>
           <li>Rust WASM biomarker engine runs at the edge inside the worker</li>
           <li>AI requests routed through worker, falls back to direct Groq, then keyword matching</li>
         </ul>
@@ -704,40 +713,79 @@ npx wrangler deploy</code></pre>
           <li>Samples sent to Worker's <code>/analyze</code> endpoint as JSON</li>
           <li>Rust WASM engine processes samples and returns a <code>BiomarkerReport</code></li>
           <li>Results displayed as a card with status badge (normal / monitor / alert)</li>
+          <li>Report saved to Durable Objects for historical trending</li>
         </ol>
+
+        <h3>Biomarker Trending</h3>
+        <p>Every biomarker report is stored server-side with a timestamp. The patient's biomarker card shows a trend view of the last 10 readings with bar charts for breathing rate, voice energy, and cough events. Alert/monitor/normal counts are summarized as colored pills. This turns a single snapshot into a longitudinal monitoring system that can detect deterioration over days.</p>
+      </section>
+
+      <!-- Engine Connection -->
+      <section id="engine-connection">
+        <h2>Engine Connection</h2>
+        <p>Tether's two AI engines — NLP (Groq LLM) and Bio-Acoustic (Rust WASM) — share context automatically:</p>
+        <ul>
+          <li>The latest biomarker report is injected into the AI system prompt before every chat request</li>
+          <li>When the patient asks "how am I doing?", the AI references actual biomarker readings (breathing rate, cough events, energy levels)</li>
+          <li>If biomarkers are in "alert" status, the AI proactively warns the patient and recommends contacting their care team</li>
+          <li>One engine listens to the body, the other explains what it means in plain language</li>
+        </ul>
+      </section>
+
+      <!-- Readability -->
+      <section id="readability">
+        <h2>Readability Scoring</h2>
+        <p>Every AI response is scored using the Flesch-Kincaid Grade Level formula. A badge on each message shows the grade level (e.g., "Grade 4.2 - Very Easy"). This proves the health literacy claim with data:</p>
+        <ul>
+          <li><span class="badge badge-green">Grade 0-5: Very Easy</span> — 5th grader can understand</li>
+          <li><span class="badge badge-amber">Grade 6-8: Easy</span> — middle school level</li>
+          <li><span class="badge badge-amber">Grade 9-12: Moderate</span> — high school level</li>
+          <li><span class="badge badge-red">Grade 13+: Complex</span> — college level (AI is prompted to stay below 6)</li>
+        </ul>
+      </section>
+
+      <!-- Multilingual -->
+      <section id="multilingual">
+        <h2>Multilingual Support</h2>
+        <p>Patients can select their preferred language from: English, Spanish, Hindi, Mandarin, French, or Arabic. The language preference is stored server-side and affects:</p>
+        <ul>
+          <li>AI chat responses — the system prompt instructs the LLM to respond in the selected language at a 5th grade reading level</li>
+          <li>Voice output — text-to-speech uses the correct language code</li>
+          <li>The setting persists across devices via Durable Objects</li>
+        </ul>
       </section>
 
       <!-- Worker -->
       <section id="worker">
         <h2>Cloudflare Worker</h2>
-        <p>The Worker serves as the secure API proxy between the mobile app and external services. It exposes two endpoints:</p>
+        <p>The Worker serves as the secure API proxy and data backend. It exposes AI endpoints and a full data API backed by Durable Objects:</p>
 
         <h3 id="api">API Endpoints</h3>
         <table>
           <tr><th>Endpoint</th><th>Method</th><th>Description</th></tr>
           <tr><td><code>/chat</code></td><td>POST</td><td>Forwards chat messages to Groq API with the GROQ_API_KEY secret</td></tr>
           <tr><td><code>/analyze</code></td><td>POST</td><td>Receives PCM audio samples, runs Rust WASM biomarker analysis, returns report</td></tr>
+          <tr><td><code>/api/signup</code></td><td>POST</td><td>Create a new account (name, email, password, role)</td></tr>
+          <tr><td><code>/api/login</code></td><td>POST</td><td>Authenticate and return user profile</td></tr>
+          <tr><td><code>/api/plans</code></td><td>GET/POST</td><td>Retrieve or publish care plans</td></tr>
+          <tr><td><code>/api/messages</code></td><td>GET/POST</td><td>Doctor-patient messaging</td></tr>
+          <tr><td><code>/api/biomarkers</code></td><td>GET/POST</td><td>Store and retrieve biomarker history</td></tr>
+          <tr><td><code>/api/user/language</code></td><td>POST</td><td>Update patient language preference</td></tr>
+          <tr><td><code>/api/users</code></td><td>GET</td><td>List users (password hashes excluded)</td></tr>
         </table>
+      </section>
 
-        <h3>Chat Request</h3>
-<pre><code>POST /chat
-Content-Type: application/json
-
-{
-  "messages": [
-    { "role": "system", "content": "..." },
-    { "role": "user", "content": "What should I do today?" }
-  ]
-}</code></pre>
-
-        <h3>Analyze Request</h3>
-<pre><code>POST /analyze
-Content-Type: application/json
-
-{
-  "samples": [0, 120, -340, ...],  // Int16 PCM samples
-  "sampleRate": 16000
-}</code></pre>
+      <!-- Durable Objects -->
+      <section id="durable-objects">
+        <h2>Durable Objects Backend</h2>
+        <p>All application data (accounts, plans, messages, biomarker history) is stored in a Cloudflare Durable Object (<code>TetherData</code>). This replaces the previous AsyncStorage-only approach and provides:</p>
+        <ul>
+          <li><strong>Cross-device sync</strong> — a doctor publishes a plan on their laptop, the patient sees it on their phone instantly</li>
+          <li><strong>Strong consistency</strong> — single-instance guarantee means no stale reads across regions</li>
+          <li><strong>Edge persistence</strong> — data persists in Cloudflare's global network with automatic replication</li>
+          <li><strong>Privacy</strong> — password hashes are stored server-side (SHA-256), never exposed to clients</li>
+        </ul>
+        <p>The DO seeds itself with starter accounts on first access. AsyncStorage is only used for local session state (which user is logged in on this device).</p>
       </section>
 
       <!-- WASM -->

@@ -6,12 +6,11 @@ import { CheckboxRow } from "../components/CheckboxRow";
 import { InputField } from "../components/InputField";
 import { SectionCard } from "../components/SectionCard";
 import {
-  authenticateUser,
-  getUsers,
-  makeAccount,
+  login,
+  signup,
   normalizeEmail,
   saveSession,
-  saveUsers,
+  cacheUser,
   saveDoctorDraft,
   buildDoctorStarterDraft,
   type UserAccount,
@@ -68,22 +67,15 @@ export function AuthScreen({ navigation }: Props) {
 
     setIsSubmitting(true);
     try {
-      const users = await getUsers();
-      if (users.some((u) => normalizeEmail(u.email) === normalized)) {
-        Alert.alert("Account exists", "An account with that email already exists.");
-        return;
-      }
-
-      const account = await makeAccount({
+      const account = await signup({
         name: fullName,
         email: normalized,
         password,
         role: authRole,
       });
 
-      const nextUsers = [...users, account];
-      await saveUsers(nextUsers);
       await saveSession({ userId: account.id });
+      await cacheUser(account);
 
       if (account.role === "doctor") {
         const draft = buildDoctorStarterDraft(account);
@@ -102,8 +94,8 @@ export function AuthScreen({ navigation }: Props) {
           },
         ],
       });
-    } catch (error) {
-      Alert.alert("Error", "Something went wrong during signup. Please try again.");
+    } catch (error: any) {
+      Alert.alert("Error", error.message || "Something went wrong during signup.");
       console.error("Signup error:", error);
     } finally {
       setIsSubmitting(false);
@@ -120,15 +112,10 @@ export function AuthScreen({ navigation }: Props) {
 
     setIsSubmitting(true);
     try {
-      const users = await getUsers();
-      const matched = await authenticateUser(users, normalized, password);
-
-      if (!matched) {
-        Alert.alert("Login failed", "That email and password combination was not found.");
-        return;
-      }
+      const matched = await login(normalized, password);
 
       await saveSession({ userId: matched.id });
+      await cacheUser(matched);
       setPassword("");
 
       navigation.reset({
@@ -140,8 +127,8 @@ export function AuthScreen({ navigation }: Props) {
           },
         ],
       });
-    } catch (error) {
-      Alert.alert("Error", "Something went wrong during login. Please try again.");
+    } catch (error: any) {
+      Alert.alert("Login failed", error.message || "Invalid email or password.");
       console.error("Login error:", error);
     } finally {
       setIsSubmitting(false);

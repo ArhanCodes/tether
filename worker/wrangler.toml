@@ -9,3 +9,12 @@ rules = [
 
 [observability]
 enabled = true
+
+[durable_objects]
+bindings = [
+  { name = "TETHER_DATA", class_name = "TetherData" }
+]
+
+[[migrations]]
+tag = "v1"
+new_sqlite_classes = ["TetherData"]

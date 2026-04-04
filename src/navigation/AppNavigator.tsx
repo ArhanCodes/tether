@@ -15,9 +15,8 @@ import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import { StatusBar } from "expo-status-bar";
 
 import {
-  ensureSeedData,
   getSession,
-  getUsers,
+  getCachedUser,
   type UserAccount,
 } from "../lib/appData";
 import { OnboardingScreen, ONBOARDING_KEY } from "../screens/OnboardingScreen";
@@ -87,10 +86,7 @@ export function AppNavigator() {
 
     async function boot() {
       try {
-        await ensureSeedData();
-
-        const [users, session, onboarded] = await Promise.all([
-          getUsers(),
+        const [session, onboarded] = await Promise.all([
           getSession(),
           AsyncStorage.getItem(ONBOARDING_KEY),
         ]);
@@ -100,11 +96,11 @@ export function AppNavigator() {
         if (!onboarded) {
           setInitialRoute("Onboarding");
         } else if (session) {
-          const found = users.find((u) => u.id === session.userId) ?? null;
-          if (found) {
-            setInitialUser(found);
+          const cachedUser = await getCachedUser();
+          if (cachedUser) {
+            setInitialUser(cachedUser);
             setInitialRoute(
-              found.role === "doctor" ? "DoctorWorkspace" : "PatientCompanion",
+              cachedUser.role === "doctor" ? "DoctorWorkspace" : "PatientCompanion",
             );
           } else {
             setInitialRoute("Auth");

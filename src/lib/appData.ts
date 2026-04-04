@@ -1,17 +1,16 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import { AI_CONFIG } from "./config";
+import type { DoctorPlan } from "./showcase";
+import type { BiomarkerReport } from "./biomarker";
 
-import { hashPassword, verifyPassword } from "./crypto";
-import { demoDoctorPlan, type DoctorPlan } from "./showcase";
-
-export type UserRole = "doctor" | "patient";
+export type UserRole = "doctor" | "patient" | "coordinator";
 
 export type UserAccount = {
   id: string;
   name: string;
   email: string;
-  password: string; // SHA-256 hash
   role: UserRole;
-  createdAt: string;
+  language: string;
 };
 
 export type UserSession = {
@@ -28,105 +27,41 @@ export type CareMessage = {
   createdAt: string;
 };
 
-export const storageKeys = {
-  users: "tether-users",
-  session: "tether-session",
-  plans: "tether-published-plans",
-  draftPrefix: "tether-draft-plan:",
-  careMessages: "tether-care-messages",
-} as const;
+export type BiomarkerRecord = {
+  id: string;
+  patientEmail: string;
+  report: BiomarkerReport;
+  timestamp: string;
+};
 
-function makeId(prefix: string): string {
-  return `${prefix}-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+const SESSION_KEY = "tether-session";
+const USER_CACHE_KEY = "tether-user-cache";
+
+function apiUrl(path: string): string {
+  return `${AI_CONFIG.workerUrl}${path}`;
+}
+
+async function apiFetch<T>(path: string, init?: RequestInit): Promise<T> {
+  const res = await fetch(apiUrl(path), {
+    ...init,
+    headers: { "Content-Type": "application/json", ...init?.headers },
+  });
+  const data = await res.json();
+  if (!res.ok) throw new Error((data as any).error || `API error ${res.status}`);
+  return data as T;
 }
 
 export function normalizeEmail(value: string): string {
   return value.trim().toLowerCase();
 }
 
-export async function createStarterAccounts(): Promise<UserAccount[]> {
-  return [
-    {
-      id: makeId("doctor"),
-      name: "Dr. Sana Malik",
-      email: "doctor@tether.app",
-      password: await hashPassword("password123"),
-      role: "doctor",
-      createdAt: new Date().toISOString(),
-    },
-    {
-      id: makeId("patient"),
-      name: "Ava Thompson",
-      email: "patient@tether.app",
-      password: await hashPassword("password123"),
-      role: "patient",
-      createdAt: new Date().toISOString(),
-    },
-  ];
-}
-
-export function createStarterPlans(): DoctorPlan[] {
-  return [
-    {
-      ...demoDoctorPlan,
-      doctorEmail: "doctor@tether.app",
-      patientEmail: "patient@tether.app",
-    },
-  ];
-}
-
-export async function ensureSeedData(): Promise<void> {
-  try {
-    const [usersValue, plansValue, messagesValue] = await Promise.all([
-      AsyncStorage.getItem(storageKeys.users),
-      AsyncStorage.getItem(storageKeys.plans),
-      AsyncStorage.getItem(storageKeys.careMessages),
-    ]);
-
-    if (!usersValue) {
-      const starters = await createStarterAccounts();
-      await AsyncStorage.setItem(storageKeys.users, JSON.stringify(starters));
-    }
-
-    if (!plansValue) {
-      await AsyncStorage.setItem(
-        storageKeys.plans,
-        JSON.stringify(createStarterPlans()),
-      );
-    }
-
-    if (!messagesValue) {
-      await AsyncStorage.setItem(storageKeys.careMessages, JSON.stringify([]));
-    }
-  } catch (error) {
-    console.error("Failed to seed data:", error);
-  }
-}
-
-export async function getUsers(): Promise<UserAccount[]> {
-  try {
-    const value = await AsyncStorage.getItem(storageKeys.users);
-    return value ? (JSON.parse(value) as UserAccount[]) : [];
-  } catch (error) {
-    console.error("Failed to read users:", error);
-    return [];
-  }
-}
-
-export async function saveUsers(users: UserAccount[]): Promise<void> {
-  try {
-    await AsyncStorage.setItem(storageKeys.users, JSON.stringify(users));
-  } catch (error) {
-    console.error("Failed to save users:", error);
-  }
-}
+// ── Session (local only — which user is logged in on this device) ────
 
 export async function getSession(): Promise<UserSession | null> {
   try {
-    const value = await AsyncStorage.getItem(storageKeys.session);
+    const value = await AsyncStorage.getItem(SESSION_KEY);
     return value ? (JSON.parse(value) as UserSession) : null;
-  } catch (error) {
-    console.error("Failed to read session:", error);
+  } catch {
     return null;
   }
 }
@@ -134,49 +69,70 @@ export async function getSession(): Promise<UserSession | null> {
 export async function saveSession(session: UserSession | null): Promise<void> {
   try {
     if (!session) {
-      await AsyncStorage.removeItem(storageKeys.session);
+      await AsyncStorage.removeItem(SESSION_KEY);
+      await AsyncStorage.removeItem(USER_CACHE_KEY);
       return;
     }
-    await AsyncStorage.setItem(storageKeys.session, JSON.stringify(session));
-  } catch (error) {
-    console.error("Failed to save session:", error);
+    await AsyncStorage.setItem(SESSION_KEY, JSON.stringify(session));
+  } catch {}
+}
+
+export async function getCachedUser(): Promise<UserAccount | null> {
+  try {
+    const value = await AsyncStorage.getItem(USER_CACHE_KEY);
+    return value ? (JSON.parse(value) as UserAccount) : null;
+  } catch {
+    return null;
   }
 }
 
-export async function getPublishedPlans(): Promise<DoctorPlan[]> {
+export async function cacheUser(user: UserAccount): Promise<void> {
   try {
-    const value = await AsyncStorage.getItem(storageKeys.plans);
-    return value ? (JSON.parse(value) as DoctorPlan[]) : [];
-  } catch (error) {
-    console.error("Failed to read plans:", error);
-    return [];
-  }
+    await AsyncStorage.setItem(USER_CACHE_KEY, JSON.stringify(user));
+  } catch {}
 }
 
-export async function savePublishedPlans(plans: DoctorPlan[]): Promise<void> {
-  try {
-    await AsyncStorage.setItem(storageKeys.plans, JSON.stringify(plans));
-  } catch (error) {
-    console.error("Failed to save plans:", error);
-  }
+// ── Auth (server) ────────────────────────────────────────────────────
+
+export async function signup(params: {
+  name: string;
+  email: string;
+  password: string;
+  role: UserRole;
+  language?: string;
+}): Promise<UserAccount> {
+  return apiFetch<UserAccount>("/api/signup", {
+    method: "POST",
+    body: JSON.stringify(params),
+  });
 }
 
-export async function getCareMessages(): Promise<CareMessage[]> {
-  try {
-    const value = await AsyncStorage.getItem(storageKeys.careMessages);
-    return value ? (JSON.parse(value) as CareMessage[]) : [];
-  } catch (error) {
-    console.error("Failed to read care messages:", error);
-    return [];
-  }
+export async function login(email: string, password: string): Promise<UserAccount> {
+  return apiFetch<UserAccount>("/api/login", {
+    method: "POST",
+    body: JSON.stringify({ email, password }),
+  });
 }
 
-export async function saveCareMessages(messages: CareMessage[]): Promise<void> {
-  try {
-    await AsyncStorage.setItem(storageKeys.careMessages, JSON.stringify(messages));
-  } catch (error) {
-    console.error("Failed to save care messages:", error);
-  }
+// ── Plans (server) ───────────────────────────────────────────────────
+
+export async function getPublishedPlans(email?: string): Promise<DoctorPlan[]> {
+  const query = email ? `?email=${encodeURIComponent(email)}` : "";
+  return apiFetch<DoctorPlan[]>(`/api/plans${query}`);
+}
+
+export async function upsertPublishedPlan(plan: DoctorPlan): Promise<void> {
+  await apiFetch<{ ok: boolean }>("/api/plans", {
+    method: "POST",
+    body: JSON.stringify(plan),
+  });
+}
+
+// ── Messages (server) ────────────────────────────────────────────────
+
+export async function getCareMessages(email?: string): Promise<CareMessage[]> {
+  const query = email ? `?email=${encodeURIComponent(email)}` : "";
+  return apiFetch<CareMessage[]>(`/api/messages${query}`);
 }
 
 export async function addCareMessage(params: {
@@ -185,112 +141,90 @@ export async function addCareMessage(params: {
   senderRole: UserRole;
   senderName: string;
   body: string;
-}): Promise<CareMessage[]> {
-  const current = await getCareMessages();
-  const nextMessage: CareMessage = {
-    id: makeId("message"),
-    doctorEmail: normalizeEmail(params.doctorEmail),
-    patientEmail: normalizeEmail(params.patientEmail),
-    senderRole: params.senderRole,
-    senderName: params.senderName,
-    body: params.body.trim(),
-    createdAt: new Date().toISOString(),
-  };
-
-  const next = [...current, nextMessage];
-  await saveCareMessages(next);
-  return next;
+}): Promise<CareMessage> {
+  return apiFetch<CareMessage>("/api/messages", {
+    method: "POST",
+    body: JSON.stringify(params),
+  });
 }
+
+// ── Biomarker history (server) ───────────────────────────────────────
+
+export async function getBiomarkerHistory(patientEmail: string): Promise<BiomarkerRecord[]> {
+  return apiFetch<BiomarkerRecord[]>(`/api/biomarkers?email=${encodeURIComponent(patientEmail)}`);
+}
+
+export async function saveBiomarkerReport(patientEmail: string, report: BiomarkerReport): Promise<BiomarkerRecord> {
+  return apiFetch<BiomarkerRecord>("/api/biomarkers", {
+    method: "POST",
+    body: JSON.stringify({ patientEmail, report }),
+  });
+}
+
+// ── User settings (server) ───────────────────────────────────────────
+
+export async function setUserLanguage(email: string, language: string): Promise<void> {
+  await apiFetch<{ ok: boolean }>("/api/user/language", {
+    method: "POST",
+    body: JSON.stringify({ email, language }),
+  });
+}
+
+export async function getUsers(role?: UserRole): Promise<UserAccount[]> {
+  const query = role ? `?role=${role}` : "";
+  return apiFetch<UserAccount[]>(`/api/users${query}`);
+}
+
+// ── Draft (local only — doctor's in-progress plan before publishing) ─
+
+const DRAFT_PREFIX = "tether-draft-plan:";
 
 export async function getDoctorDraft(userEmail: string): Promise<DoctorPlan | null> {
   try {
-    const value = await AsyncStorage.getItem(
-      `${storageKeys.draftPrefix}${normalizeEmail(userEmail)}`,
-    );
+    const value = await AsyncStorage.getItem(`${DRAFT_PREFIX}${normalizeEmail(userEmail)}`);
     return value ? (JSON.parse(value) as DoctorPlan) : null;
-  } catch (error) {
-    console.error("Failed to read doctor draft:", error);
+  } catch {
     return null;
   }
 }
 
-export async function saveDoctorDraft(
-  userEmail: string,
-  plan: DoctorPlan,
-): Promise<void> {
+export async function saveDoctorDraft(userEmail: string, plan: DoctorPlan): Promise<void> {
   try {
-    await AsyncStorage.setItem(
-      `${storageKeys.draftPrefix}${normalizeEmail(userEmail)}`,
-      JSON.stringify(plan),
-    );
-  } catch (error) {
-    console.error("Failed to save doctor draft:", error);
-  }
+    await AsyncStorage.setItem(`${DRAFT_PREFIX}${normalizeEmail(userEmail)}`, JSON.stringify(plan));
+  } catch {}
 }
 
 export async function clearDoctorDraft(userEmail: string): Promise<void> {
   try {
-    await AsyncStorage.removeItem(
-      `${storageKeys.draftPrefix}${normalizeEmail(userEmail)}`,
-    );
-  } catch (error) {
-    console.error("Failed to clear doctor draft:", error);
-  }
-}
-
-export async function upsertPublishedPlan(plan: DoctorPlan): Promise<DoctorPlan[]> {
-  const current = await getPublishedPlans();
-  const next = current.filter(
-    (item) =>
-      !(
-        normalizeEmail(item.doctorEmail) === normalizeEmail(plan.doctorEmail) &&
-        normalizeEmail(item.patientEmail) === normalizeEmail(plan.patientEmail)
-      ),
-  );
-
-  next.unshift(plan);
-  await savePublishedPlans(next);
-  return next;
-}
-
-export async function makeAccount(params: {
-  name: string;
-  email: string;
-  password: string;
-  role: UserRole;
-}): Promise<UserAccount> {
-  return {
-    id: makeId(params.role),
-    name: params.name.trim(),
-    email: normalizeEmail(params.email),
-    password: await hashPassword(params.password),
-    role: params.role,
-    createdAt: new Date().toISOString(),
-  };
-}
-
-export async function authenticateUser(
-  users: UserAccount[],
-  email: string,
-  password: string,
-): Promise<UserAccount | null> {
-  const normalized = normalizeEmail(email);
-  for (const user of users) {
-    if (normalizeEmail(user.email) === normalized) {
-      const matches = await verifyPassword(password, user.password);
-      if (matches) return user;
-    }
-  }
-  return null;
+    await AsyncStorage.removeItem(`${DRAFT_PREFIX}${normalizeEmail(userEmail)}`);
+  } catch {}
 }
 
 export function buildDoctorStarterDraft(account: UserAccount): DoctorPlan {
   return {
-    ...demoDoctorPlan,
     doctorName: account.name,
     doctorEmail: account.email,
     patientName: "",
     patientEmail: "",
+    age: "",
+    diagnosis: "",
+    symptomSummary: "",
+    heartRate: "",
+    bloodPressure: "",
+    temperature: "",
+    oxygenSaturation: "",
+    medications: [],
+    dailyInstructions: [],
+    redFlags: [],
+    followUp: "",
+    doctorNotes: "",
+    tone: "reassuring" as const,
     lastUpdatedAt: new Date().toISOString(),
   };
+}
+
+// ── Compat shim: ensureSeedData is now a no-op (server seeds itself) ─
+
+export async function ensureSeedData(): Promise<void> {
+  // Server seeds its own data on first load — nothing to do client-side
 }

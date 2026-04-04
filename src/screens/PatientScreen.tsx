@@ -23,12 +23,18 @@ import {
   addCareMessage,
   getCareMessages,
   getPublishedPlans,
+  getBiomarkerHistory,
+  saveBiomarkerReport,
+  setUserLanguage,
   normalizeEmail,
   saveSession,
+  cacheUser,
   type CareMessage,
+  type BiomarkerRecord,
 } from "../lib/appData";
 import { quickPrompts, type DoctorPlan, type QuickPromptIntent } from "../lib/showcase";
-import { generateAIReply, generateAIQuickReply } from "../lib/ai";
+import { generateAIReply, generateAIQuickReply, type AIContext } from "../lib/ai";
+import { fleschKincaidGradeLevel, readabilityLabel } from "../lib/readability";
 import {
   startBiomarkerRecording,
   stopAndAnalyze,
@@ -73,18 +79,25 @@ export function PatientScreen({ navigation, route }: Props) {
   const [voiceError, setVoiceError] = useState<string | null>(null);
   const [isThinking, setIsThinking] = useState(false);
   const [biomarkerReport, setBiomarkerReport] = useState<BiomarkerReport | null>(null);
+  const [biomarkerHistory, setBiomarkerHistory] = useState<BiomarkerRecord[]>([]);
   const [isBiomarkerRecording, setIsBiomarkerRecording] = useState(false);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
+  const [language, setLanguage] = useState(user.language || "English");
   const finalVoiceTranscriptRef = useRef("");
 
   useEffect(() => {
     void (async () => {
       try {
-        const [plans, msgs] = await Promise.all([
-          getPublishedPlans(),
-          getCareMessages(),
+        const [plans, msgs, bioHistory] = await Promise.all([
+          getPublishedPlans(user.email),
+          getCareMessages(user.email),
+          getBiomarkerHistory(user.email),
         ]);
         setCareMessages(msgs);
+        setBiomarkerHistory(bioHistory);
+        if (bioHistory.length > 0) {
+          setBiomarkerReport(bioHistory[bioHistory.length - 1].report);
+        }
 
         const plan =
           plans.find(
@@ -175,8 +188,10 @@ export function PatientScreen({ navigation, route }: Props) {
     setPatientInput("");
     setIsThinking(true);
 
+    const aiCtx: AIContext = { plan: activePlan, language, latestBiomarker: biomarkerReport };
+
     try {
-      const reply = await generateAIReply(activePlan, message);
+      const reply = await generateAIReply(aiCtx, message);
       const assistantMsg: ChatMessage = {
         id: `assistant-${Date.now()}`,
         role: "assistant",
@@ -186,9 +201,10 @@ export function PatientScreen({ navigation, route }: Props) {
       };
       setMessages((cur) => [...cur, assistantMsg]);
 
+      const speechLang = language === "Spanish" ? "es" : language === "Hindi" ? "hi" : language === "Mandarin" ? "zh-CN" : language === "French" ? "fr" : language === "Arabic" ? "ar" : "en-US";
       if (audioRepliesEnabled) {
         Speech.stop();
-        Speech.speak(reply.message, { language: "en-US", pitch: 1, rate: 0.96 });
+        Speech.speak(reply.message, { language: speechLang, pitch: 1, rate: 0.96 });
       }
     } catch (error) {
       console.error("AI reply error:", error);
@@ -218,8 +234,10 @@ export function PatientScreen({ navigation, route }: Props) {
     setMessages((cur) => [...cur, patientMsg]);
     setIsThinking(true);
 
+    const aiCtx: AIContext = { plan: activePlan, language, latestBiomarker: biomarkerReport };
+
     try {
-      const reply = await generateAIQuickReply(activePlan, label, intent);
+      const reply = await generateAIQuickReply(aiCtx, label, intent);
       const assistantMsg: ChatMessage = {
         id: `assistant-${Date.now()}`,
         role: "assistant",
@@ -229,9 +247,10 @@ export function PatientScreen({ navigation, route }: Props) {
       };
       setMessages((cur) => [...cur, assistantMsg]);
 
+      const speechLang = language === "Spanish" ? "es" : language === "Hindi" ? "hi" : language === "Mandarin" ? "zh-CN" : language === "French" ? "fr" : language === "Arabic" ? "ar" : "en-US";
       if (audioRepliesEnabled) {
         Speech.stop();
-        Speech.speak(reply.message, { language: "en-US", pitch: 1, rate: 0.96 });
+        Speech.speak(reply.message, { language: speechLang, pitch: 1, rate: 0.96 });
       }
     } catch (error) {
       console.error("Quick prompt error:", error);
@@ -287,6 +306,9 @@ export function PatientScreen({ navigation, route }: Props) {
         const report = await stopAndAnalyze();
         if (report) {
           setBiomarkerReport(report);
+          // Save to server for trending
+          const record = await saveBiomarkerReport(user.email, report);
+          setBiomarkerHistory(prev => [...prev, record]);
           if (report.status === "alert") {
             Alert.alert(
               "Health Alert",
@@ -318,19 +340,29 @@ export function PatientScreen({ navigation, route }: Props) {
     if (!body) return;
 
     try {
-      const nextMessages = await addCareMessage({
+      await addCareMessage({
         doctorEmail: activePlan.doctorEmail,
         patientEmail: activePlan.patientEmail,
         senderRole: "patient",
         senderName: user.name,
         body,
       });
-      setCareMessages(nextMessages);
+      setCareMessages(await getCareMessages(user.email));
       setCareMessageInput("");
       Alert.alert("Sent", `Your message was sent to ${activePlan.doctorName}.`);
     } catch (error) {
       Alert.alert("Error", "Failed to send message. Please try again.");
       console.error("Send message error:", error);
+    }
+  }
+
+  async function handleLanguageChange(lang: string) {
+    setLanguage(lang);
+    try {
+      await setUserLanguage(user.email, lang);
+      await cacheUser({ ...user, language: lang });
+    } catch (error) {
+      console.error("Failed to save language:", error);
     }
   }
 
@@ -355,6 +387,20 @@ export function PatientScreen({ navigation, route }: Props) {
           <Text style={styles.secondaryButtonText}>Log Out</Text>
         </Pressable>
       </View>
+
+      <SectionCard title="Language" subtitle="AI responses and voice output will use your preferred language.">
+        <View style={styles.promptWrap}>
+          {["English", "Spanish", "Hindi", "Mandarin", "French", "Arabic"].map((lang) => (
+            <Pressable
+              key={lang}
+              style={[styles.promptChip, language === lang && styles.promptChipActive]}
+              onPress={() => void handleLanguageChange(lang)}
+            >
+              <Text style={[styles.promptChipText, language === lang && styles.promptChipTextActive]}>{lang}</Text>
+            </Pressable>
+          ))}
+        </View>
+      </SectionCard>
 
       {!activePlan ? (
         <SectionCard
@@ -506,7 +552,7 @@ export function PatientScreen({ navigation, route }: Props) {
                 </Text>
               </View>
             ) : null}
-            {biomarkerReport ? <BiomarkerCard report={biomarkerReport} /> : null}
+            {biomarkerReport ? <BiomarkerCard report={biomarkerReport} history={biomarkerHistory} /> : null}
           </SectionCard>
 
           <SectionCard
@@ -686,7 +732,9 @@ const styles = StyleSheet.create({
     borderRadius: 999,
     backgroundColor: "#e2e8f0",
   },
+  promptChipActive: { backgroundColor: "#1d4ed8" },
   promptChipText: { color: "#334155", fontWeight: "700" },
+  promptChipTextActive: { color: "#ffffff" },
   chatInput: {
     minHeight: 78,
     borderRadius: 18,

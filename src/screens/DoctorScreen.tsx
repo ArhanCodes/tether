@@ -20,7 +20,6 @@ import {
   getCareMessages,
   getDoctorDraft,
   getPublishedPlans,
-  getUsers,
   normalizeEmail,
   saveDoctorDraft,
   saveSession,
@@ -71,20 +70,17 @@ export function DoctorScreen({ navigation, route }: Props) {
   const [draftPlan, setDraftPlan] = useState<DoctorPlan>(demoDoctorPlan);
   const [doctorThreadPatientEmail, setDoctorThreadPatientEmail] = useState("");
   const [doctorReplyInput, setDoctorReplyInput] = useState("");
-  const [users, setUsers] = useState<UserAccount[]>([]);
 
   useEffect(() => {
     void (async () => {
       try {
-        const [plans, msgs, draft, allUsers] = await Promise.all([
-          getPublishedPlans(),
-          getCareMessages(),
+        const [plans, msgs, draft] = await Promise.all([
+          getPublishedPlans(user.email),
+          getCareMessages(user.email),
           getDoctorDraft(user.email),
-          getUsers(),
         ]);
         setPublishedPlans(plans);
         setCareMessages(msgs);
-        setUsers(allUsers);
         setDraftPlan(
           draft ?? {
             ...buildDoctorStarterDraft(user),
@@ -184,18 +180,6 @@ export function DoctorScreen({ navigation, route }: Props) {
       return;
     }
 
-    const patientAccount = users.find(
-      (u) => u.role === "patient" && normalizeEmail(u.email) === normalizedPatientEmail,
-    );
-
-    if (!patientAccount) {
-      Alert.alert(
-        "Patient account not found",
-        "Create the patient account first, then publish the plan to that patient email.",
-      );
-      return;
-    }
-
     try {
       const nextPlan: DoctorPlan = {
         ...draftPlan,
@@ -205,16 +189,16 @@ export function DoctorScreen({ navigation, route }: Props) {
         lastUpdatedAt: new Date().toISOString(),
       };
 
-      const nextPlans = await upsertPublishedPlan(nextPlan);
-      setPublishedPlans(nextPlans);
+      await upsertPublishedPlan(nextPlan);
+      setPublishedPlans(await getPublishedPlans(user.email));
       setDraftPlan(nextPlan);
 
       Alert.alert(
         "Plan published",
         "The assigned patient can now see this plan after logging in.",
       );
-    } catch (error) {
-      Alert.alert("Error", "Failed to publish plan. Please try again.");
+    } catch (error: any) {
+      Alert.alert("Error", error.message || "Failed to publish plan.");
       console.error("Publish error:", error);
     }
   }
@@ -232,8 +216,8 @@ export function DoctorScreen({ navigation, route }: Props) {
 
   async function refreshPlans() {
     try {
-      setPublishedPlans(await getPublishedPlans());
-      setCareMessages(await getCareMessages());
+      setPublishedPlans(await getPublishedPlans(user.email));
+      setCareMessages(await getCareMessages(user.email));
     } catch (error) {
       console.error("Failed to refresh:", error);
     }
@@ -250,14 +234,14 @@ export function DoctorScreen({ navigation, route }: Props) {
     if (!body) return;
 
     try {
-      const nextMessages = await addCareMessage({
+      await addCareMessage({
         doctorEmail: user.email,
         patientEmail: doctorThreadPatientEmail,
         senderRole: "doctor",
         senderName: user.name,
         body,
       });
-      setCareMessages(nextMessages);
+      setCareMessages(await getCareMessages(user.email));
       setDoctorReplyInput("");
     } catch (error) {
       Alert.alert("Error", "Failed to send reply.");

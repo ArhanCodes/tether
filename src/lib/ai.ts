@@ -6,9 +6,19 @@ import {
   type DoctorPlan,
   type QuickPromptIntent,
 } from "./showcase";
+import type { BiomarkerReport } from "./biomarker";
 
-function buildSystemPrompt(plan: DoctorPlan): string {
-  return `You are Tether AI, a clinical companion assistant for post-discharge patients. You answer questions based ONLY on the care plan the patient's doctor published. Never diagnose, prescribe, or give advice beyond what the doctor documented.
+export type AIContext = {
+  plan: DoctorPlan;
+  language?: string;
+  latestBiomarker?: BiomarkerReport | null;
+};
+
+function buildSystemPrompt(ctx: AIContext): string {
+  const { plan, language, latestBiomarker } = ctx;
+  const lang = language && language !== "English" ? language : null;
+
+  let prompt = `You are Tether AI, a clinical companion assistant for post-discharge patients. You answer questions based ONLY on the care plan the patient's doctor published. Never diagnose, prescribe, or give advice beyond what the doctor documented.
 
 DOCTOR'S CARE PLAN:
 - Doctor: ${plan.doctorName}
@@ -21,13 +31,30 @@ DOCTOR'S CARE PLAN:
 - Red flags (contact care team immediately): ${plan.redFlags.join("; ")}
 - Follow-up: ${plan.followUp}
 - Doctor's note on tone: ${plan.doctorNotes}
-- Preferred tone: ${plan.tone}
+- Preferred tone: ${plan.tone}`;
+
+  // Inject latest biomarker data if available (engine connection)
+  if (latestBiomarker) {
+    prompt += `
+
+LATEST VOICE BIOMARKER ANALYSIS:
+- Voice Energy: ${latestBiomarker.energy} (low values suggest fatigue)
+- Breathing Rate: ${latestBiomarker.breathing_rate}/min (normal: 12-20)
+- Pitch Variability: ${latestBiomarker.pitch_variability} (high values may indicate tremor)
+- Cough Events: ${latestBiomarker.cough_events}
+- Status: ${latestBiomarker.status.toUpperCase()}
+- Summary: ${latestBiomarker.summary}
+
+When the patient asks about their health or how they're doing, incorporate relevant biomarker findings into your response. If biomarker status is "alert", proactively mention the concerning findings and recommend contacting the care team.`;
+  }
+
+  prompt += `
 
 RULES:
 1. Only reference information from the care plan above.
 2. If the patient describes a red-flag symptom, set urgency to "urgent" and tell them to contact their care team immediately.
 3. If you cannot answer from the plan, say so and suggest messaging the doctor directly.
-4. Keep responses short, ${plan.tone}, and easy to understand.
+4. Keep responses short, ${plan.tone}, and easy to understand at a 5th grade reading level.
 5. Always respond with valid JSON matching this schema:
 {
   "message": "string - your response to the patient",
@@ -35,6 +62,13 @@ RULES:
   "supportingPoints": ["string array of 1-3 supporting details from the plan"],
   "handoffSuggested": boolean
 }`;
+
+  if (lang) {
+    prompt += `
+6. IMPORTANT: Respond in ${lang}. The patient's preferred language is ${lang}. All text in the "message" field must be in ${lang}. Keep it simple — 5th grade reading level in ${lang}.`;
+  }
+
+  return prompt;
 }
 
 function parseAIResponse(text: string): AssistantReply {
@@ -126,34 +160,34 @@ async function callAI(
 }
 
 export async function generateAIReply(
-  plan: DoctorPlan,
+  ctx: AIContext,
   patientMessage: string,
 ): Promise<AssistantReply> {
   if (!isAIConfigured()) {
-    return fallbackReply(plan, patientMessage);
+    return fallbackReply(ctx.plan, patientMessage);
   }
 
   try {
-    const systemPrompt = buildSystemPrompt(plan);
+    const systemPrompt = buildSystemPrompt(ctx);
     return await callAI(systemPrompt, patientMessage);
   } catch {
-    return fallbackReply(plan, patientMessage);
+    return fallbackReply(ctx.plan, patientMessage);
   }
 }
 
 export async function generateAIQuickReply(
-  plan: DoctorPlan,
+  ctx: AIContext,
   label: string,
   intent: QuickPromptIntent,
 ): Promise<AssistantReply> {
   if (!isAIConfigured()) {
-    return fallbackQuickReply(plan, intent);
+    return fallbackQuickReply(ctx.plan, intent);
   }
 
   try {
-    const systemPrompt = buildSystemPrompt(plan);
+    const systemPrompt = buildSystemPrompt(ctx);
     return await callAI(systemPrompt, label);
   } catch {
-    return fallbackQuickReply(plan, intent);
+    return fallbackQuickReply(ctx.plan, intent);
   }
 }
