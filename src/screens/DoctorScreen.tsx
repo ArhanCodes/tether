@@ -81,12 +81,11 @@ export function DoctorScreen({ navigation, route }: Props) {
         ]);
         setPublishedPlans(plans);
         setCareMessages(msgs);
+        // Load draft: local draft (if it has content) > latest published plan > empty starter
+        const myPublished = plans.find(p => normalizeEmail(p.doctorEmail) === normalizeEmail(user.email));
+        const hasDraftContent = draft && (draft.diagnosis || draft.symptomSummary || draft.patientName);
         setDraftPlan(
-          draft ?? {
-            ...buildDoctorStarterDraft(user),
-            patientName: "Ava Thompson",
-            patientEmail: "patient@tether.app",
-          },
+          hasDraftContent ? draft : (myPublished ?? buildDoctorStarterDraft(user)),
         );
       } catch (error) {
         console.error("Failed to load doctor data:", error);
