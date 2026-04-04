@@ -20,27 +20,29 @@ export type BiomarkerReport = {
   status: "normal" | "monitor" | "alert";
 };
 
+const TARGET_SAMPLE_RATE = 16000;
+
 const WAV_RECORDING_OPTIONS: RecordingOptions = {
   extension: ".wav",
-  sampleRate: 16000,
+  sampleRate: TARGET_SAMPLE_RATE,
   numberOfChannels: 1,
   bitRate: 256000,
   android: {
     outputFormat: "default",
     audioEncoder: "default",
-    sampleRate: 16000,
+    sampleRate: TARGET_SAMPLE_RATE,
   },
   ios: {
     outputFormat: IOSOutputFormat.LINEARPCM,
     audioQuality: AudioQuality.HIGH,
-    sampleRate: 16000,
+    sampleRate: TARGET_SAMPLE_RATE,
     linearPCMBitDepth: 16,
     linearPCMIsBigEndian: false,
     linearPCMIsFloat: false,
   },
   web: {
-    mimeType: "audio/wav",
-    bitsPerSecond: 256000,
+    mimeType: "audio/webm",
+    bitsPerSecond: 128000,
   },
 };
 
@@ -74,10 +76,16 @@ export async function stopAndAnalyze(): Promise<BiomarkerReport | null> {
 
     await setAudioModeAsync({ allowsRecording: false });
 
-    // Read the WAV file and extract PCM samples
     const response = await fetch(uri);
     const arrayBuffer = await response.arrayBuffer();
-    const samples = extractPCMFromWAV(arrayBuffer);
+
+    // Try WAV parsing first (works on native iOS/Android)
+    let samples = extractPCMFromWAV(arrayBuffer);
+
+    // If WAV parsing failed (web produces webm), decode with Web Audio API
+    if (samples.length === 0 && typeof AudioContext !== "undefined") {
+      samples = await decodeWebAudio(arrayBuffer);
+    }
 
     if (samples.length === 0) return null;
 
@@ -89,7 +97,7 @@ export async function stopAndAnalyze(): Promise<BiomarkerReport | null> {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         samples: Array.from(samples),
-        sampleRate: 16000,
+        sampleRate: TARGET_SAMPLE_RATE,
       }),
     });
 
@@ -120,16 +128,61 @@ export async function cancelRecording(): Promise<void> {
   }
 }
 
+// ── Web Audio API decoder (for webm/mp4 on browsers) ────────────────
+
+async function decodeWebAudio(buffer: ArrayBuffer): Promise<Int16Array> {
+  try {
+    const audioCtx = new AudioContext({ sampleRate: TARGET_SAMPLE_RATE });
+    const audioBuffer = await audioCtx.decodeAudioData(buffer.slice(0));
+    await audioCtx.close();
+
+    // Get the first channel as Float32
+    const float32 = audioBuffer.getChannelData(0);
+
+    // If the decoded sample rate differs, resample
+    let resampled = float32;
+    if (audioBuffer.sampleRate !== TARGET_SAMPLE_RATE) {
+      resampled = resample(float32, audioBuffer.sampleRate, TARGET_SAMPLE_RATE);
+    }
+
+    // Convert Float32 [-1, 1] to Int16
+    const int16 = new Int16Array(resampled.length);
+    for (let i = 0; i < resampled.length; i++) {
+      const clamped = Math.max(-1, Math.min(1, resampled[i]));
+      int16[i] = clamped < 0 ? clamped * 32768 : clamped * 32767;
+    }
+
+    return int16;
+  } catch (error) {
+    console.error("Web Audio decode error:", error);
+    return new Int16Array(0);
+  }
+}
+
+function resample(input: Float32Array, fromRate: number, toRate: number): Float32Array {
+  const ratio = fromRate / toRate;
+  const outputLength = Math.floor(input.length / ratio);
+  const output = new Float32Array(outputLength);
+  for (let i = 0; i < outputLength; i++) {
+    const srcIndex = i * ratio;
+    const low = Math.floor(srcIndex);
+    const high = Math.min(low + 1, input.length - 1);
+    const frac = srcIndex - low;
+    output[i] = input[low] * (1 - frac) + input[high] * frac;
+  }
+  return output;
+}
+
+// ── WAV parser (for native iOS/Android recordings) ───────────────────
+
 function extractPCMFromWAV(buffer: ArrayBuffer): Int16Array {
   const view = new DataView(buffer);
 
-  // Verify WAV header
   if (buffer.byteLength < 44) return new Int16Array(0);
 
   const riff = String.fromCharCode(view.getUint8(0), view.getUint8(1), view.getUint8(2), view.getUint8(3));
   if (riff !== "RIFF") return new Int16Array(0);
 
-  // Find the "data" chunk
   let offset = 12;
   while (offset + 8 < buffer.byteLength) {
     const chunkId = String.fromCharCode(
@@ -151,7 +204,7 @@ function extractPCMFromWAV(buffer: ArrayBuffer): Int16Array {
     }
 
     offset += 8 + chunkSize;
-    if (chunkSize % 2 !== 0) offset++; // padding byte
+    if (chunkSize % 2 !== 0) offset++;
   }
 
   return new Int16Array(0);
