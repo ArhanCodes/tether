@@ -68,6 +68,7 @@ interface BiomarkerRecord {
     pitch_variability: number;
     cough_events: number;
     zero_crossing_rate: number;
+    confidence: number;
     summary: string;
     status: "normal" | "monitor" | "alert";
   };

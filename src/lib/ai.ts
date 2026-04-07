@@ -50,6 +50,8 @@ LATEST VOICE BIOMARKER ANALYSIS:
 - Breathing Rate: ${latestBiomarker.breathing_rate}/min (normal: 12-20)
 - Pitch Variability: ${latestBiomarker.pitch_variability} (high values may indicate tremor)
 - Cough Events: ${latestBiomarker.cough_events}
+- Zero-Crossing Rate: ${latestBiomarker.zero_crossing_rate} (high = breathy/labored speech)
+- Analysis Confidence: ${latestBiomarker.confidence} (0-1 scale, based on recording quality)
 - Status: ${latestBiomarker.status.toUpperCase()}
 - Summary: ${latestBiomarker.summary}
 

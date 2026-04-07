@@ -8,11 +8,57 @@ const STATUS_COLORS = {
   alert: { bg: "#fee2e2", text: "#991b1b" },
 } as const;
 
-function Metric({ label, value }: { label: string; value: string }) {
+const METRIC_EXPLANATIONS: Record<string, string> = {
+  "Voice Energy": "How strong your voice sounds. Low values may indicate fatigue.",
+  "Breathing Rate": "Estimated breaths per minute. Normal is 12–20/min.",
+  "Pitch Variability": "How much your voice pitch fluctuates. High values may indicate tremor.",
+  "Cough Events": "Number of cough-like bursts detected in the recording.",
+};
+
+function deltaArrow(current: number, previous: number | undefined): string {
+  if (previous === undefined) return "";
+  const diff = current - previous;
+  if (Math.abs(diff) < 0.01) return " →";
+  return diff > 0 ? " ↑" : " ↓";
+}
+
+function Metric({
+  label,
+  value,
+  previousValue,
+  explanation,
+}: {
+  label: string;
+  value: string;
+  previousValue?: number;
+  explanation?: string;
+}) {
+  const currentNum = parseFloat(value);
+  const arrow = !isNaN(currentNum) ? deltaArrow(currentNum, previousValue) : "";
+
   return (
     <View style={styles.metric}>
       <Text style={styles.metricLabel}>{label}</Text>
-      <Text style={styles.metricValue}>{value}</Text>
+      <Text style={styles.metricValue}>
+        {value}
+        {arrow ? <Text style={arrow.includes("↑") ? styles.deltaUp : arrow.includes("↓") ? styles.deltaDown : styles.deltaSame}>{arrow}</Text> : null}
+      </Text>
+      {explanation ? <Text style={styles.metricExplanation}>{explanation}</Text> : null}
+    </View>
+  );
+}
+
+function ConfidenceBadge({ confidence }: { confidence: number }) {
+  const pct = Math.round(confidence * 100);
+  const color = confidence >= 0.7 ? "#166534" : confidence >= 0.4 ? "#92400e" : "#991b1b";
+  const bg = confidence >= 0.7 ? "#dcfce7" : confidence >= 0.4 ? "#fef3c7" : "#fee2e2";
+  const label = confidence >= 0.7 ? "High" : confidence >= 0.4 ? "Moderate" : "Low";
+
+  return (
+    <View style={[styles.confidenceBadge, { backgroundColor: bg }]}>
+      <Text style={[styles.confidenceText, { color }]}>
+        {label} confidence ({pct}%)
+      </Text>
     </View>
   );
 }
@@ -53,6 +99,9 @@ export function BiomarkerCard({
   const coughValues = history?.map(h => h.report.cough_events) ?? [];
   const hasHistory = (history?.length ?? 0) > 1;
 
+  // Previous reading for delta arrows
+  const prev = hasHistory ? history![history!.length - 2]?.report : undefined;
+
   return (
     <View style={styles.card}>
       <View style={styles.headerRow}>
@@ -64,13 +113,37 @@ export function BiomarkerCard({
         </View>
       </View>
 
+      {report.confidence !== undefined ? (
+        <ConfidenceBadge confidence={report.confidence} />
+      ) : null}
+
       <Text style={styles.summary}>{report.summary}</Text>
 
       <View style={styles.metricsGrid}>
-        <Metric label="Voice Energy" value={`${report.energy}`} />
-        <Metric label="Breathing Rate" value={`${report.breathing_rate}/min`} />
-        <Metric label="Pitch Variability" value={`${report.pitch_variability}`} />
-        <Metric label="Cough Events" value={`${report.cough_events}`} />
+        <Metric
+          label="Voice Energy"
+          value={`${report.energy}`}
+          previousValue={prev?.energy}
+          explanation={METRIC_EXPLANATIONS["Voice Energy"]}
+        />
+        <Metric
+          label="Breathing Rate"
+          value={`${report.breathing_rate}/min`}
+          previousValue={prev?.breathing_rate}
+          explanation={METRIC_EXPLANATIONS["Breathing Rate"]}
+        />
+        <Metric
+          label="Pitch Variability"
+          value={`${report.pitch_variability}`}
+          previousValue={prev?.pitch_variability}
+          explanation={METRIC_EXPLANATIONS["Pitch Variability"]}
+        />
+        <Metric
+          label="Cough Events"
+          value={`${report.cough_events}`}
+          previousValue={prev?.cough_events}
+          explanation={METRIC_EXPLANATIONS["Cough Events"]}
+        />
       </View>
 
       {hasHistory ? (
@@ -150,6 +223,16 @@ const styles = StyleSheet.create({
     fontWeight: "800",
     letterSpacing: 0.8,
   },
+  confidenceBadge: {
+    alignSelf: "flex-start",
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 999,
+  },
+  confidenceText: {
+    fontSize: 11,
+    fontWeight: "700",
+  },
   summary: {
     color: "#334155",
     fontSize: 14,
@@ -178,6 +261,24 @@ const styles = StyleSheet.create({
     color: "#0f172a",
     fontSize: 15,
     fontWeight: "700",
+  },
+  metricExplanation: {
+    marginTop: 4,
+    color: "#94a3b8",
+    fontSize: 11,
+    lineHeight: 15,
+  },
+  deltaUp: {
+    color: "#dc2626",
+    fontWeight: "800",
+  },
+  deltaDown: {
+    color: "#16a34a",
+    fontWeight: "800",
+  },
+  deltaSame: {
+    color: "#94a3b8",
+    fontWeight: "800",
   },
   trendSection: {
     padding: 14,
