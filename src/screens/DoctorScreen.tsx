@@ -218,6 +218,7 @@ export function DoctorScreen({ navigation, route }: Props) {
       setPublishedPlans(await getPublishedPlans(user.email));
       setCareMessages(await getCareMessages(user.email));
     } catch (error) {
+      Alert.alert("Refresh Failed", "Could not load latest data. Check your connection and try again.");
       console.error("Failed to refresh:", error);
     }
   }

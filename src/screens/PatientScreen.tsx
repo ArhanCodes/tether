@@ -40,6 +40,8 @@ import {
   stopAndAnalyze,
   cancelRecording,
   isRecording as checkIsRecording,
+  getRecordingElapsedSeconds,
+  getMinRecordingSeconds,
   type BiomarkerReport,
 } from "../lib/biomarker";
 import type { RootStackParamList } from "../navigation/AppNavigator";
@@ -88,25 +90,34 @@ export function PatientScreen({ navigation, route }: Props) {
   useEffect(() => {
     void (async () => {
       try {
-        const [plans, msgs, bioHistory] = await Promise.all([
+        // Load independently so one failure doesn't block others
+        const [plansResult, msgsResult, bioResult] = await Promise.allSettled([
           getPublishedPlans(user.email),
           getCareMessages(user.email),
           getBiomarkerHistory(user.email),
         ]);
-        setCareMessages(msgs);
-        setBiomarkerHistory(bioHistory);
-        if (bioHistory.length > 0) {
-          setBiomarkerReport(bioHistory[bioHistory.length - 1].report);
+
+        if (msgsResult.status === "fulfilled") {
+          setCareMessages(msgsResult.value);
+        }
+        if (bioResult.status === "fulfilled") {
+          setBiomarkerHistory(bioResult.value);
+          if (bioResult.value.length > 0) {
+            setBiomarkerReport(bioResult.value[bioResult.value.length - 1].report);
+          }
         }
 
-        const plan =
-          plans.find(
-            (p) => normalizeEmail(p.patientEmail) === normalizeEmail(user.email),
-          ) ?? null;
-        setActivePlan(plan);
-
-        if (plan) {
-          setMessages([createGreeting(plan)]);
+        if (plansResult.status === "fulfilled") {
+          const plan =
+            plansResult.value.find(
+              (p) => normalizeEmail(p.patientEmail) === normalizeEmail(user.email),
+            ) ?? null;
+          setActivePlan(plan);
+          if (plan) {
+            setMessages([createGreeting(plan)]);
+          }
+        } else {
+          Alert.alert("Connection Error", "Could not load your care plan. Pull down to refresh or restart the app.");
         }
 
         try {
@@ -116,6 +127,7 @@ export function PatientScreen({ navigation, route }: Props) {
         }
       } catch (error) {
         console.error("Failed to load patient data:", error);
+        Alert.alert("Error", "Could not connect to the server. Check your internet connection.");
       }
     })();
 
@@ -301,22 +313,30 @@ export function PatientScreen({ navigation, route }: Props) {
 
   async function handleBiomarkerToggle() {
     if (isBiomarkerRecording) {
+      const elapsed = getRecordingElapsedSeconds();
+      if (elapsed < getMinRecordingSeconds()) {
+        Alert.alert(
+          "Keep Recording",
+          `Please record for at least ${getMinRecordingSeconds()} seconds. You've recorded ${Math.round(elapsed)} seconds so far.`,
+        );
+        return;
+      }
       setIsAnalyzing(true);
       try {
         const report = await stopAndAnalyze();
-        if (report) {
-          setBiomarkerReport(report);
-          // Save to server for trending
-          const record = await saveBiomarkerReport(user.email, report);
-          setBiomarkerHistory(prev => [...prev, record]);
-          if (report.status === "alert") {
-            Alert.alert(
-              "Health Alert",
-              report.summary + "\n\nConsider contacting your care team.",
-            );
-          }
+        setBiomarkerReport(report);
+        // Save to server for trending
+        const record = await saveBiomarkerReport(user.email, report);
+        setBiomarkerHistory(prev => [...prev, record]);
+        if (report.status === "alert") {
+          Alert.alert(
+            "Health Alert",
+            report.summary + "\n\nConsider contacting your care team.",
+          );
         }
-      } catch (error) {
+      } catch (error: any) {
+        const message = error?.message || "Analysis failed. Please try again.";
+        Alert.alert("Biomarker Error", message);
         console.error("Biomarker error:", error);
       } finally {
         setIsBiomarkerRecording(false);
@@ -327,8 +347,11 @@ export function PatientScreen({ navigation, route }: Props) {
         await startBiomarkerRecording();
         setIsBiomarkerRecording(true);
         setBiomarkerReport(null);
-      } catch (error) {
-        Alert.alert("Recording Error", "Could not start audio recording.");
+      } catch (error: any) {
+        const message = error?.message === "Microphone permission not granted"
+          ? "Microphone access was denied. Please enable it in your device settings."
+          : "Could not start audio recording. Make sure no other app is using the microphone.";
+        Alert.alert("Recording Error", message);
         console.error("Biomarker start error:", error);
       }
     }

@@ -46,7 +46,10 @@ const WAV_RECORDING_OPTIONS: RecordingOptions = {
   },
 };
 
+const MIN_RECORDING_SECONDS = 5;
+
 let recorder: AudioRecorder | null = null;
+let recordingStartTime: number | null = null;
 
 export async function startBiomarkerRecording(): Promise<void> {
   const permission = await requestRecordingPermissionsAsync();
@@ -61,18 +64,37 @@ export async function startBiomarkerRecording(): Promise<void> {
 
   const options = createRecordingOptions(WAV_RECORDING_OPTIONS);
   recorder = new AudioModule.AudioRecorder(options);
+  recordingStartTime = Date.now();
   recorder.record();
 }
 
-export async function stopAndAnalyze(): Promise<BiomarkerReport | null> {
-  if (!recorder) return null;
+export function getRecordingElapsedSeconds(): number {
+  if (!recordingStartTime) return 0;
+  return (Date.now() - recordingStartTime) / 1000;
+}
+
+export function getMinRecordingSeconds(): number {
+  return MIN_RECORDING_SECONDS;
+}
+
+export async function stopAndAnalyze(): Promise<BiomarkerReport> {
+  if (!recorder) throw new Error("No active recording");
+
+  const elapsed = getRecordingElapsedSeconds();
+  if (elapsed < MIN_RECORDING_SECONDS) {
+    await recorder.stop();
+    recorder = null;
+    recordingStartTime = null;
+    throw new Error(`Recording too short (${Math.round(elapsed)}s). Please record for at least ${MIN_RECORDING_SECONDS} seconds.`);
+  }
 
   try {
     await recorder.stop();
     const uri = recorder.uri;
     recorder = null;
+    recordingStartTime = null;
 
-    if (!uri) return null;
+    if (!uri) throw new Error("Recording produced no audio file");
 
     await setAudioModeAsync({ allowsRecording: false });
 
@@ -87,10 +109,10 @@ export async function stopAndAnalyze(): Promise<BiomarkerReport | null> {
       samples = await decodeWebAudio(arrayBuffer);
     }
 
-    if (samples.length === 0) return null;
+    if (samples.length === 0) throw new Error("Could not decode audio — try recording again");
 
     // Send to worker for WASM analysis
-    if (!AI_CONFIG.workerUrl) return null;
+    if (!AI_CONFIG.workerUrl) throw new Error("Server not configured");
 
     const analyzeResponse = await fetch(`${AI_CONFIG.workerUrl}/analyze`, {
       method: "POST",
@@ -102,14 +124,15 @@ export async function stopAndAnalyze(): Promise<BiomarkerReport | null> {
     });
 
     if (!analyzeResponse.ok) {
-      throw new Error(`Analysis failed: ${analyzeResponse.status}`);
+      const errBody = await analyzeResponse.json().catch(() => null) as { error?: string } | null;
+      throw new Error(errBody?.error || `Analysis failed (${analyzeResponse.status})`);
     }
 
     return (await analyzeResponse.json()) as BiomarkerReport;
   } catch (error) {
-    console.error("Biomarker analysis error:", error);
     recorder = null;
-    return null;
+    recordingStartTime = null;
+    throw error;
   }
 }
 
@@ -125,6 +148,7 @@ export async function cancelRecording(): Promise<void> {
       // already stopped
     }
     recorder = null;
+    recordingStartTime = null;
   }
 }
 
@@ -133,7 +157,7 @@ export async function cancelRecording(): Promise<void> {
 async function decodeWebAudio(buffer: ArrayBuffer): Promise<Int16Array> {
   try {
     const audioCtx = new AudioContext({ sampleRate: TARGET_SAMPLE_RATE });
-    const audioBuffer = await audioCtx.decodeAudioData(buffer.slice(0));
+    const audioBuffer = await audioCtx.decodeAudioData(buffer);
     await audioCtx.close();
 
     // Get the first channel as Float32

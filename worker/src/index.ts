@@ -243,6 +243,22 @@ export class TetherData {
 
   private async upsertPlan(request: Request): Promise<Response> {
     const plan = await request.json() as DoctorPlan;
+    if (!plan.doctorEmail || !plan.patientEmail || !plan.doctorName || !plan.patientName) {
+      return json({ error: "Missing required plan fields (doctorEmail, patientEmail, doctorName, patientName)" }, 400);
+    }
+    const validTones = ["calm", "direct", "reassuring"];
+    if (!validTones.includes(plan.tone)) {
+      return json({ error: "Invalid tone — must be calm, direct, or reassuring" }, 400);
+    }
+    // Enforce length limits on text fields
+    plan.diagnosis = (plan.diagnosis || "").slice(0, 1000);
+    plan.symptomSummary = (plan.symptomSummary || "").slice(0, 2000);
+    plan.doctorNotes = (plan.doctorNotes || "").slice(0, 2000);
+    plan.followUp = (plan.followUp || "").slice(0, 1000);
+    if (Array.isArray(plan.medications)) plan.medications = plan.medications.slice(0, 50).map(m => m.slice(0, 500));
+    if (Array.isArray(plan.dailyInstructions)) plan.dailyInstructions = plan.dailyInstructions.slice(0, 50).map(i => i.slice(0, 500));
+    if (Array.isArray(plan.redFlags)) plan.redFlags = plan.redFlags.slice(0, 50).map(r => r.slice(0, 500));
+
     const data = await this.load();
     // Validate target patient exists
     const patientExists = data.users.find(u => norm(u.email) === norm(plan.patientEmail));
@@ -277,14 +293,24 @@ export class TetherData {
 
   private async addMessage(request: Request): Promise<Response> {
     const body = await request.json() as { doctorEmail: string; patientEmail: string; senderRole: UserRole; senderName: string; body: string };
+    if (!body.doctorEmail || !body.patientEmail || !body.senderName || !body.body?.trim()) {
+      return json({ error: "Missing required message fields" }, 400);
+    }
+    const validRoles: UserRole[] = ["doctor", "patient", "coordinator"];
+    if (!validRoles.includes(body.senderRole)) {
+      return json({ error: "Invalid senderRole" }, 400);
+    }
+    if (body.body.length > 5000) {
+      return json({ error: "Message too long (max 5000 characters)" }, 400);
+    }
     const data = await this.load();
     const msg: CareMessage = {
       id: makeId("msg"),
       doctorEmail: norm(body.doctorEmail),
       patientEmail: norm(body.patientEmail),
       senderRole: body.senderRole,
-      senderName: body.senderName,
-      body: body.body.trim(),
+      senderName: body.senderName.slice(0, 200),
+      body: body.body.trim().slice(0, 5000),
       createdAt: new Date().toISOString(),
     };
     data.messages.push(msg);
@@ -306,11 +332,32 @@ export class TetherData {
 
   private async addBiomarker(request: Request): Promise<Response> {
     const body = await request.json() as { patientEmail: string; report: BiomarkerRecord["report"] };
+    if (!body.patientEmail || !body.report) {
+      return json({ error: "Missing patientEmail or report" }, 400);
+    }
+    const r = body.report;
+    if (typeof r.energy !== "number" || typeof r.breathing_rate !== "number" ||
+        typeof r.pitch_variability !== "number" || typeof r.cough_events !== "number" ||
+        typeof r.zero_crossing_rate !== "number" || !r.summary || !r.status) {
+      return json({ error: "Invalid biomarker report format" }, 400);
+    }
+    const validStatuses = ["normal", "monitor", "alert"];
+    if (!validStatuses.includes(r.status)) {
+      return json({ error: "Invalid biomarker status" }, 400);
+    }
+    // Clamp numeric values to sane ranges
+    r.energy = Math.max(0, Math.min(100, r.energy));
+    r.breathing_rate = Math.max(0, Math.min(100, r.breathing_rate));
+    r.pitch_variability = Math.max(0, Math.min(100, r.pitch_variability));
+    r.cough_events = Math.max(0, Math.min(1000, r.cough_events));
+    r.zero_crossing_rate = Math.max(0, Math.min(100, r.zero_crossing_rate));
+    r.summary = r.summary.slice(0, 2000);
+
     const data = await this.load();
     const record: BiomarkerRecord = {
       id: makeId("bio"),
       patientEmail: norm(body.patientEmail),
-      report: body.report,
+      report: r,
       timestamp: new Date().toISOString(),
     };
     data.biomarkers.push(record);
@@ -318,8 +365,11 @@ export class TetherData {
     const e = norm(body.patientEmail);
     const patientRecords = data.biomarkers.filter(b => norm(b.patientEmail) === e);
     if (patientRecords.length > 200) {
-      const cutoff = patientRecords[patientRecords.length - 200].timestamp;
-      data.biomarkers = data.biomarkers.filter(b => norm(b.patientEmail) !== e || b.timestamp >= cutoff);
+      // Remove oldest records by index, not timestamp (avoids issues with identical timestamps)
+      const toRemove = new Set(
+        patientRecords.slice(0, patientRecords.length - 200).map(b => b.id)
+      );
+      data.biomarkers = data.biomarkers.filter(b => !toRemove.has(b.id));
     }
     await this.save();
     return json(record);
@@ -397,15 +447,27 @@ async function handleAnalyze(request: Request): Promise<Response> {
     sampleRate: number;
   };
 
-  if (!body.samples || !body.sampleRate) {
-    return json({ error: "Missing samples or sampleRate" }, 400);
+  if (!body.samples || !Array.isArray(body.samples) || body.samples.length === 0) {
+    return json({ error: "Missing or empty samples array" }, 400);
+  }
+  if (!body.sampleRate || typeof body.sampleRate !== "number" || body.sampleRate <= 0) {
+    return json({ error: "Missing or invalid sampleRate" }, 400);
   }
 
-  const samples = new Int16Array(body.samples);
-  const resultJson = analyze_audio(samples, body.sampleRate);
-  const report = JSON.parse(resultJson);
+  // Require at least 1 second of audio
+  const minSamples = body.sampleRate;
+  if (body.samples.length < minSamples) {
+    return json({ error: "Recording too short — need at least 5 seconds of audio" }, 400);
+  }
 
-  return json(report);
+  try {
+    const samples = new Int16Array(body.samples);
+    const resultJson = analyze_audio(samples, body.sampleRate);
+    const report = JSON.parse(resultJson);
+    return json(report);
+  } catch (err: any) {
+    return json({ error: "Biomarker analysis failed", details: err.message || "Unknown WASM error" }, 500);
+  }
 }
 
 // ── Worker entry ─────────────────────────────────────────────────────

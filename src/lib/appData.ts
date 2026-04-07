@@ -74,7 +74,9 @@ export async function saveSession(session: UserSession | null): Promise<void> {
       return;
     }
     await AsyncStorage.setItem(SESSION_KEY, JSON.stringify(session));
-  } catch {}
+  } catch (error) {
+    console.error("Failed to save session:", error);
+  }
 }
 
 export async function getCachedUser(): Promise<UserAccount | null> {
@@ -89,7 +91,9 @@ export async function getCachedUser(): Promise<UserAccount | null> {
 export async function cacheUser(user: UserAccount): Promise<void> {
   try {
     await AsyncStorage.setItem(USER_CACHE_KEY, JSON.stringify(user));
-  } catch {}
+  } catch (error) {
+    console.error("Failed to cache user:", error);
+  }
 }
 
 // ── Auth (server) ────────────────────────────────────────────────────
@@ -191,13 +195,17 @@ export async function getDoctorDraft(userEmail: string): Promise<DoctorPlan | nu
 export async function saveDoctorDraft(userEmail: string, plan: DoctorPlan): Promise<void> {
   try {
     await AsyncStorage.setItem(`${DRAFT_PREFIX}${normalizeEmail(userEmail)}`, JSON.stringify(plan));
-  } catch {}
+  } catch (error) {
+    console.error("Failed to save draft:", error);
+  }
 }
 
 export async function clearDoctorDraft(userEmail: string): Promise<void> {
   try {
     await AsyncStorage.removeItem(`${DRAFT_PREFIX}${normalizeEmail(userEmail)}`);
-  } catch {}
+  } catch (error) {
+    console.error("Failed to clear draft:", error);
+  }
 }
 
 export function buildDoctorStarterDraft(account: UserAccount): DoctorPlan {
