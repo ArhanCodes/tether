@@ -10,6 +10,7 @@ import {
 } from "react-native";
 import type { NativeStackScreenProps } from "@react-navigation/native-stack";
 
+import { AnimatedButton } from "../components/AnimatedButton";
 import { InputField } from "../components/InputField";
 import { SectionCard } from "../components/SectionCard";
 import { SummaryPill } from "../components/SummaryPill";
@@ -262,23 +263,15 @@ export function DoctorScreen({ navigation, route }: Props) {
           Publishing is locked to real patient accounts so plans are not sent into the wrong inbox.
         </Text>
         <View style={styles.buttonRow}>
-          <Pressable style={styles.secondaryButton} onPress={() => void loadDoctorStarter()}>
-            <Text style={styles.secondaryButtonText}>Reset Draft</Text>
-          </Pressable>
-          <Pressable style={styles.secondaryButton} onPress={() => void handleLogout()}>
-            <Text style={styles.secondaryButtonText}>Log Out</Text>
-          </Pressable>
+          <AnimatedButton label="Reset Draft" variant="secondary" onPress={() => void loadDoctorStarter()} />
+          <AnimatedButton label="Log Out" variant="secondary" onPress={() => void handleLogout()} />
         </View>
       </View>
 
       <SectionCard title="Publish Patient Plan" subtitle="This screen is only for doctor accounts.">
         <View style={styles.buttonRow}>
-          <Pressable style={styles.primaryButton} onPress={() => void publishPlan()}>
-            <Text style={styles.primaryButtonText}>Publish Plan</Text>
-          </Pressable>
-          <Pressable style={styles.secondaryButton} onPress={() => void refreshPlans()}>
-            <Text style={styles.secondaryButtonText}>Refresh Plans</Text>
-          </Pressable>
+          <AnimatedButton label="Publish Plan" variant="primary" onPress={() => void publishPlan()} accessibilityLabel="Publish care plan to patient" />
+          <AnimatedButton label="Refresh Plans" variant="secondary" onPress={() => void refreshPlans()} />
         </View>
 
         <View style={styles.dualRow}>
@@ -408,9 +401,7 @@ export function DoctorScreen({ navigation, route }: Props) {
               multiline
             />
 
-            <Pressable style={styles.primaryButton} onPress={() => void sendDoctorReply()}>
-              <Text style={styles.primaryButtonText}>Send Reply</Text>
-            </Pressable>
+            <AnimatedButton label="Send Reply" variant="primary" onPress={() => void sendDoctorReply()} accessibilityLabel="Send reply to patient" />
           </>
         ) : (
           <Text style={styles.previewText}>

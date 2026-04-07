@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { View, TextInput, StyleSheet } from "react-native";
 
 import { FieldLabel } from "./FieldLabel";
@@ -21,6 +22,8 @@ export function InputField({
   keyboardType?: "default" | "email-address";
   autoCapitalize?: "none" | "sentences" | "words";
 }) {
+  const [isFocused, setIsFocused] = useState(false);
+
   return (
     <View style={styles.inputGroup}>
       <FieldLabel>{label}</FieldLabel>
@@ -35,7 +38,14 @@ export function InputField({
         autoCapitalize={autoCapitalize}
         autoCorrect={false}
         textAlignVertical={multiline ? "top" : "center"}
-        style={[styles.input, multiline && styles.multilineInput]}
+        onFocus={() => setIsFocused(true)}
+        onBlur={() => setIsFocused(false)}
+        style={[
+          styles.input,
+          multiline && styles.multilineInput,
+          isFocused && styles.inputFocused,
+        ]}
+        accessibilityLabel={label}
       />
     </View>
   );
@@ -49,7 +59,7 @@ const styles = StyleSheet.create({
     minHeight: 52,
     borderRadius: 18,
     backgroundColor: "#ffffff",
-    borderWidth: 1,
+    borderWidth: 1.5,
     borderColor: "#e2e8f0",
     paddingHorizontal: 16,
     paddingVertical: 14,
@@ -58,5 +68,13 @@ const styles = StyleSheet.create({
   },
   multilineInput: {
     minHeight: 110,
+  },
+  inputFocused: {
+    borderColor: "#3b82f6",
+    shadowColor: "#3b82f6",
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.15,
+    shadowRadius: 6,
+    elevation: 2,
   },
 });

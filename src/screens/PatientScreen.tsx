@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
   Alert,
+  Animated,
   Pressable,
   ScrollView,
   Text,
@@ -15,6 +16,7 @@ import {
 } from "expo-speech-recognition";
 import type { NativeStackScreenProps } from "@react-navigation/native-stack";
 
+import { AnimatedButton } from "../components/AnimatedButton";
 import { BiomarkerCard } from "../components/BiomarkerCard";
 import { MessageBubble, type ChatMessage } from "../components/MessageBubble";
 import { SectionCard } from "../components/SectionCard";
@@ -86,6 +88,7 @@ export function PatientScreen({ navigation, route }: Props) {
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [language, setLanguage] = useState(user.language || "English");
   const finalVoiceTranscriptRef = useRef("");
+  const [recordingSeconds, setRecordingSeconds] = useState(0);
 
   useEffect(() => {
     void (async () => {
@@ -141,6 +144,18 @@ export function PatientScreen({ navigation, route }: Props) {
       }
     };
   }, [user]);
+
+  // Recording timer
+  useEffect(() => {
+    if (!isBiomarkerRecording) {
+      setRecordingSeconds(0);
+      return;
+    }
+    const interval = setInterval(() => {
+      setRecordingSeconds(Math.round(getRecordingElapsedSeconds()));
+    }, 500);
+    return () => clearInterval(interval);
+  }, [isBiomarkerRecording]);
 
   useSpeechRecognitionEvent("start", () => {
     setIsListening(true);
@@ -540,17 +555,18 @@ export function PatientScreen({ navigation, route }: Props) {
             />
 
             <View style={styles.buttonRow}>
-              <Pressable style={styles.primaryButton} onPress={() => void submitPatientMessage()}>
-                <Text style={styles.primaryButtonText}>Send to AI</Text>
-              </Pressable>
-              <Pressable
-                style={[styles.voiceButton, isListening && styles.voiceButtonActive]}
+              <AnimatedButton
+                label="Send to AI"
+                variant="primary"
+                onPress={() => void submitPatientMessage()}
+                accessibilityLabel="Send message to Tether AI"
+              />
+              <AnimatedButton
+                label={isListening ? "Stop Listening" : "Start Voice Chat"}
+                variant={isListening ? "voiceActive" : "voice"}
                 onPress={() => void handleVoiceToggle()}
-              >
-                <Text style={[styles.voiceButtonText, isListening && styles.voiceButtonTextActive]}>
-                  {isListening ? "Stop Listening" : "Start Voice Chat"}
-                </Text>
-              </Pressable>
+                accessibilityLabel={isListening ? "Stop voice recognition" : "Start voice recognition"}
+              />
             </View>
           </SectionCard>
 
@@ -559,28 +575,47 @@ export function PatientScreen({ navigation, route }: Props) {
             subtitle="Record a voice sample to analyze breathing, cough patterns, and vocal health."
           >
             <View style={styles.buttonRow}>
-              <Pressable
-                style={[
-                  isBiomarkerRecording ? styles.voiceButtonActive : styles.voiceButton,
-                  isAnalyzing && styles.buttonDisabled,
-                ]}
-                onPress={() => void handleBiomarkerToggle()}
-                disabled={isAnalyzing}
-              >
-                <Text style={isBiomarkerRecording ? styles.voiceButtonTextActive : styles.voiceButtonText}>
-                  {isAnalyzing
+              <AnimatedButton
+                label={
+                  isAnalyzing
                     ? "Analyzing..."
                     : isBiomarkerRecording
-                      ? "Stop & Analyze"
-                      : "Start Voice Check"}
-                </Text>
-              </Pressable>
+                      ? `Stop & Analyze (${recordingSeconds}s)`
+                      : "Start Voice Check"
+                }
+                variant={isBiomarkerRecording ? "voiceActive" : "voice"}
+                onPress={() => void handleBiomarkerToggle()}
+                disabled={isAnalyzing}
+                accessibilityLabel={
+                  isAnalyzing
+                    ? "Analyzing voice biomarkers"
+                    : isBiomarkerRecording
+                      ? `Stop recording. ${recordingSeconds} seconds recorded`
+                      : "Start voice biomarker recording"
+                }
+              />
             </View>
             {isBiomarkerRecording ? (
-              <View style={styles.transcriptCard}>
-                <Text style={styles.transcriptLabel}>Recording</Text>
-                <Text style={styles.transcriptText}>
-                  Speak naturally for 10–15 seconds. Your voice is being recorded for biomarker analysis.
+              <View style={styles.recordingCard}>
+                <View style={styles.recordingHeader}>
+                  <View style={styles.recordingDot} />
+                  <Text style={styles.recordingLabel}>Recording — {recordingSeconds}s</Text>
+                </View>
+                <View style={styles.recordingProgress}>
+                  <View
+                    style={[
+                      styles.recordingProgressFill,
+                      {
+                        width: `${Math.min(100, (recordingSeconds / 15) * 100)}%`,
+                        backgroundColor: recordingSeconds < getMinRecordingSeconds() ? "#f59e0b" : "#22c55e",
+                      },
+                    ]}
+                  />
+                </View>
+                <Text style={styles.recordingHint}>
+                  {recordingSeconds < getMinRecordingSeconds()
+                    ? `Keep going — ${getMinRecordingSeconds() - recordingSeconds}s more needed`
+                    : "Good recording length. Tap Stop & Analyze when ready."}
                 </Text>
               </View>
             ) : null}
@@ -609,28 +644,37 @@ export function PatientScreen({ navigation, route }: Props) {
               </View>
             ) : null}
 
-            <ScrollView
-              style={styles.chatLog}
-              contentContainerStyle={styles.chatLogContent}
-              nestedScrollEnabled
-              showsVerticalScrollIndicator={false}
-            >
-              {patientConversation.map((msg) => (
-                <View
-                  key={msg.id}
-                  style={[
-                    styles.messageBubble,
-                    msg.senderRole === "doctor" ? styles.assistantBubble : styles.patientBubble,
-                  ]}
-                >
-                  <View style={styles.messageHeader}>
-                    <Text style={styles.messageRole}>{msg.senderName}</Text>
-                    <Text style={styles.threadTime}>{formatTimestamp(msg.createdAt)}</Text>
+            {patientConversation.length === 0 ? (
+              <View style={styles.emptyState}>
+                <Text style={styles.emptyStateIcon}>💬</Text>
+                <Text style={styles.emptyStateText}>
+                  No messages yet. Send a message to {activePlan.doctorName} when you need human guidance.
+                </Text>
+              </View>
+            ) : (
+              <ScrollView
+                style={styles.chatLog}
+                contentContainerStyle={styles.chatLogContent}
+                nestedScrollEnabled
+                showsVerticalScrollIndicator={false}
+              >
+                {patientConversation.map((msg) => (
+                  <View
+                    key={msg.id}
+                    style={[
+                      styles.messageBubble,
+                      msg.senderRole === "doctor" ? styles.assistantBubble : styles.patientBubble,
+                    ]}
+                  >
+                    <View style={styles.messageHeader}>
+                      <Text style={styles.messageRole}>{msg.senderName}</Text>
+                      <Text style={styles.threadTime}>{formatTimestamp(msg.createdAt)}</Text>
+                    </View>
+                    <Text style={styles.messageText}>{msg.body}</Text>
                   </View>
-                  <Text style={styles.messageText}>{msg.body}</Text>
-                </View>
-              ))}
-            </ScrollView>
+                ))}
+              </ScrollView>
+            )}
 
             <TextInput
               value={careMessageInput}
@@ -641,9 +685,12 @@ export function PatientScreen({ navigation, route }: Props) {
               multiline
             />
 
-            <Pressable style={styles.primaryButton} onPress={() => void sendMessageToDoctor()}>
-              <Text style={styles.primaryButtonText}>Message Doctor</Text>
-            </Pressable>
+            <AnimatedButton
+              label="Message Doctor"
+              variant="primary"
+              onPress={() => void sendMessageToDoctor()}
+              accessibilityLabel={`Send message to ${activePlan.doctorName}`}
+            />
           </SectionCard>
 
           <SectionCard title="Account & Safety" subtitle="Clear patient-facing safeguards.">
@@ -815,4 +862,57 @@ const styles = StyleSheet.create({
   messageRole: { color: "#0f172a", fontWeight: "800" },
   messageText: { marginTop: 8, color: "#334155", fontSize: 15, lineHeight: 23 },
   threadTime: { color: "#94a3b8", fontSize: 12, fontWeight: "600" },
+  recordingCard: {
+    padding: 16,
+    borderRadius: 18,
+    backgroundColor: "#fef2f2",
+    borderWidth: 1,
+    borderColor: "#fecaca",
+    gap: 10,
+  },
+  recordingHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+  },
+  recordingDot: {
+    width: 10,
+    height: 10,
+    borderRadius: 5,
+    backgroundColor: "#ef4444",
+  },
+  recordingLabel: {
+    color: "#991b1b",
+    fontSize: 14,
+    fontWeight: "800",
+  },
+  recordingProgress: {
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: "#fecaca",
+    overflow: "hidden",
+  },
+  recordingProgressFill: {
+    height: "100%",
+    borderRadius: 3,
+  },
+  recordingHint: {
+    color: "#7f1d1d",
+    fontSize: 13,
+    lineHeight: 19,
+  },
+  emptyState: {
+    padding: 24,
+    alignItems: "center",
+    gap: 8,
+  },
+  emptyStateIcon: {
+    fontSize: 32,
+  },
+  emptyStateText: {
+    color: "#94a3b8",
+    fontSize: 14,
+    textAlign: "center",
+    lineHeight: 21,
+  },
 });

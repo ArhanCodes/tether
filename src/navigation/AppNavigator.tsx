@@ -127,8 +127,9 @@ export function AppNavigator() {
       <SafeAreaView style={styles.safeArea}>
         <StatusBar style="dark" />
         <View style={styles.loadingWrap}>
+          <Text style={styles.loadingBrand}>T</Text>
           <ActivityIndicator size="large" color="#3b82f6" />
-          <Text style={styles.loadingText}>Loading Tether...</Text>
+          <Text style={styles.loadingText}>Preparing your care companion...</Text>
         </View>
       </SafeAreaView>
     );
@@ -176,9 +177,16 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     gap: 14,
   },
+  loadingBrand: {
+    color: "#1d4ed8",
+    fontSize: 48,
+    fontWeight: "900",
+    letterSpacing: -1,
+    marginBottom: 8,
+  },
   loadingText: {
     color: "#64748b",
-    fontSize: 16,
-    fontWeight: "700",
+    fontSize: 15,
+    fontWeight: "600",
   },
 });
