@@ -6,7 +6,7 @@ function StatusBarClock() {
   const [time, setTime] = useState(() => formatTime());
 
   useEffect(() => {
-    const interval = setInterval(() => setTime(formatTime()), 10000);
+    const interval = setInterval(() => setTime(formatTime()), 1000);
     return () => clearInterval(interval);
   }, []);
 

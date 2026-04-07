@@ -68,6 +68,61 @@ function createGreeting(plan: DoctorPlan): ChatMessage {
   };
 }
 
+function ThinkingDot({ delay }: { delay: number }) {
+  const opacity = useRef(new Animated.Value(0.3)).current;
+  useEffect(() => {
+    const pulse = Animated.loop(
+      Animated.sequence([
+        Animated.timing(opacity, { toValue: 1, duration: 400, delay, useNativeDriver: true }),
+        Animated.timing(opacity, { toValue: 0.3, duration: 400, useNativeDriver: true }),
+      ]),
+    );
+    pulse.start();
+    return () => pulse.stop();
+  }, [delay, opacity]);
+  return <Animated.View style={[thinkingStyles.dot, { opacity }]} />;
+}
+
+function ThinkingBubble() {
+  return (
+    <View style={thinkingStyles.bubble}>
+      <Text style={thinkingStyles.label}>Tether AI</Text>
+      <View style={thinkingStyles.dots}>
+        <ThinkingDot delay={0} />
+        <ThinkingDot delay={150} />
+        <ThinkingDot delay={300} />
+      </View>
+    </View>
+  );
+}
+
+const thinkingStyles = StyleSheet.create({
+  bubble: {
+    padding: 14,
+    borderRadius: 18,
+    backgroundColor: "#eff6ff",
+    borderWidth: 1,
+    borderColor: "#bfdbfe",
+    gap: 8,
+  },
+  label: {
+    color: "#1d4ed8",
+    fontWeight: "800",
+    fontSize: 13,
+  },
+  dots: {
+    flexDirection: "row",
+    gap: 6,
+    paddingVertical: 4,
+  },
+  dot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: "#3b82f6",
+  },
+});
+
 export function PatientScreen({ navigation, route }: Props) {
   const { user } = route.params;
 
@@ -526,11 +581,7 @@ export function PatientScreen({ navigation, route }: Props) {
               {messages.map((msg) => (
                 <MessageBubble key={msg.id} message={msg} />
               ))}
-              {isThinking ? (
-                <View style={styles.thinkingBubble}>
-                  <Text style={styles.thinkingText}>Thinking...</Text>
-                </View>
-              ) : null}
+              {isThinking ? <ThinkingBubble /> : null}
             </ScrollView>
 
             <View style={styles.promptWrap}>

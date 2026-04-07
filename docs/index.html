@@ -333,6 +333,7 @@
       <nav>
         <div class="nav-section">Getting Started</div>
         <a href="#overview">Overview</a>
+        <a href="#how-it-works">How It Works</a>
         <a href="#architecture">Architecture</a>
         <a href="#quickstart">Quickstart</a>
 
@@ -368,7 +369,78 @@
         <p>
           A clinical companion app that connects post-discharge patients with their healthcare providers through AI-powered guidance, voice biomarker analysis, and secure messaging.
         </p>
+        <div class="hero-badges">
+          <span class="badge badge-blue">React Native + Expo</span>
+          <span class="badge badge-blue">Cloudflare Workers</span>
+          <span class="badge badge-blue">Rust WASM Biomarkers</span>
+          <span class="badge badge-blue">6 Languages</span>
+        </div>
+        <div style="display:flex;gap:12px;margin-top:24px;flex-wrap:wrap;">
+          <a href="https://tether-web-did.pages.dev" target="_blank" style="display:inline-block;padding:12px 24px;background:white;color:var(--blue-700);font-weight:800;border-radius:12px;text-decoration:none;font-size:14px;">Try the Demo</a>
+          <a href="#how-it-works" style="display:inline-block;padding:12px 24px;background:rgba(255,255,255,0.15);color:white;font-weight:700;border-radius:12px;text-decoration:none;font-size:14px;">How It Works</a>
+          <a href="https://github.com/ArhanCodes/tether" target="_blank" style="display:inline-block;padding:12px 24px;background:rgba(255,255,255,0.15);color:white;font-weight:700;border-radius:12px;text-decoration:none;font-size:14px;">GitHub</a>
+        </div>
       </div>
+
+      <!-- Feature highlights -->
+      <div class="card-grid" style="margin-bottom:48px;">
+        <div class="card">
+          <div class="card-icon">AI</div>
+          <h4>Plan-Grounded AI Chat</h4>
+          <p>Patients ask questions in plain language. The AI only answers from the doctor's published plan — never guesses.</p>
+        </div>
+        <div class="card">
+          <div class="card-icon" style="background:var(--green-100);color:var(--green-600);">V</div>
+          <h4>Voice Biomarkers</h4>
+          <p>Rust WASM analyzes breathing rate, cough events, and vocal energy from a 10-second recording.</p>
+        </div>
+        <div class="card">
+          <div class="card-icon" style="background:var(--amber-100);color:var(--amber-600);">E</div>
+          <h4>Engine Connection</h4>
+          <p>Biomarker results feed into AI context — so "How is my breathing?" gets a real, data-backed answer.</p>
+        </div>
+        <div class="card">
+          <div class="card-icon" style="background:var(--red-100);color:var(--red-600);">R</div>
+          <h4>Red Flag Escalation</h4>
+          <p>When the AI detects a red flag symptom, it marks the response urgent and suggests contacting the care team.</p>
+        </div>
+      </div>
+
+      <!-- How It Works -->
+      <section id="how-it-works">
+        <h2>How It Works</h2>
+        <p>Tether keeps patients and doctors connected after a hospital discharge. Here is the simple version:</p>
+
+        <div class="callout" style="margin-top:16px">
+          <h3>1. The doctor creates a recovery plan</h3>
+          <p>Before the patient leaves the hospital, their doctor opens Tether and fills in a personalized care plan: diagnosis, medications, daily instructions, warning signs to watch for, and a follow-up date. The doctor also picks a communication tone (calm, direct, or reassuring) so the app speaks the way the patient is most comfortable with.</p>
+        </div>
+
+        <div class="callout" style="margin-top:12px">
+          <h3>2. The patient gets a personal AI companion</h3>
+          <p>When the patient logs in, they see their plan and can ask questions in plain language — by typing or speaking. The AI only answers using information from the doctor's plan, never guessing or making things up. Every response includes a readability score so caregivers can verify the language is easy enough to understand.</p>
+        </div>
+
+        <div class="callout" style="margin-top:12px">
+          <h3>3. Voice biomarkers track recovery</h3>
+          <p>The patient can do a quick voice check — just talk into the phone for a few seconds. Tether analyzes the audio to detect breathing rate, cough patterns, vocal energy, and tremor. These biomarkers are tracked over time so the doctor can spot trends without an in-person visit.</p>
+        </div>
+
+        <div class="callout" style="margin-top:12px">
+          <h3>4. The two engines talk to each other</h3>
+          <p>This is what makes Tether different. The voice biomarker results are automatically shared with the AI companion. So if the patient asks "How is my breathing?", the AI already knows the latest voice check showed an elevated breathing rate and can give a relevant, grounded answer — not a generic one.</p>
+        </div>
+
+        <div class="callout" style="margin-top:12px">
+          <h3>5. Humans stay in the loop</h3>
+          <p>If the AI cannot fully answer a question, it suggests the patient message their doctor directly. Doctors see these messages in real time and can reply. The AI never replaces the doctor — it bridges the gap between hospital visits so patients are never left guessing alone.</p>
+        </div>
+
+        <div class="callout" style="margin-top:12px">
+          <h3>6. Works in the patient's language</h3>
+          <p>Patients can switch between English, Spanish, Hindi, Mandarin, French, and Arabic. The AI responds and speaks in their chosen language, removing a major barrier to understanding medical instructions after discharge.</p>
+        </div>
+      </section>
 
       <!-- Architecture -->
       <section id="architecture">
