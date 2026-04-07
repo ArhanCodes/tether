@@ -266,6 +266,15 @@ export function PatientScreen({ navigation, route }: Props) {
       }
     } catch (error) {
       console.error("Quick prompt error:", error);
+      setMessages((cur) => [
+        ...cur,
+        {
+          id: `assistant-${Date.now()}`,
+          role: "assistant",
+          text: "Sorry, I had trouble generating a response. Please try again or message your doctor directly.",
+          urgency: "routine",
+        },
+      ]);
     } finally {
       setIsThinking(false);
     }

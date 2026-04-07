@@ -14,6 +14,14 @@ export type AIContext = {
   latestBiomarker?: BiomarkerReport | null;
 };
 
+const AI_TIMEOUT_MS = 30_000;
+
+function fetchWithTimeout(url: string, init: RequestInit, timeoutMs = AI_TIMEOUT_MS): Promise<Response> {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), timeoutMs);
+  return fetch(url, { ...init, signal: controller.signal }).finally(() => clearTimeout(timer));
+}
+
 function buildSystemPrompt(ctx: AIContext): string {
   const { plan, language, latestBiomarker } = ctx;
   const lang = language && language !== "English" ? language : null;
@@ -72,25 +80,36 @@ RULES:
 }
 
 function parseAIResponse(text: string): AssistantReply {
-  const jsonMatch = text.match(/\{[\s\S]*\}/);
+  // Use non-greedy match to avoid spanning across multiple JSON objects
+  const jsonMatch = text.match(/\{[\s\S]*?\}(?=[^}]*$)/) || text.match(/\{[\s\S]*\}/);
   if (!jsonMatch) {
-    throw new Error("Could not parse JSON from AI response");
+    // If no JSON found, treat the entire text as the message
+    return { message: text.trim(), urgency: "routine", supportingPoints: [], handoffSuggested: false };
   }
 
-  const parsed = JSON.parse(jsonMatch[0]) as AssistantReply;
-  return {
-    message: parsed.message,
-    urgency: parsed.urgency ?? "routine",
-    supportingPoints: parsed.supportingPoints ?? [],
-    handoffSuggested: parsed.handoffSuggested ?? false,
-  };
+  try {
+    const parsed = JSON.parse(jsonMatch[0]);
+    const message = typeof parsed.message === "string" && parsed.message.trim()
+      ? parsed.message
+      : text.trim();
+    const validUrgencies = ["routine", "contact-clinician", "urgent"];
+    return {
+      message,
+      urgency: validUrgencies.includes(parsed.urgency) ? parsed.urgency : "routine",
+      supportingPoints: Array.isArray(parsed.supportingPoints) ? parsed.supportingPoints : [],
+      handoffSuggested: typeof parsed.handoffSuggested === "boolean" ? parsed.handoffSuggested : false,
+    };
+  } catch {
+    // JSON parse failed — use raw text as message
+    return { message: text.trim(), urgency: "routine", supportingPoints: [], handoffSuggested: false };
+  }
 }
 
 async function callViaWorker(
   systemPrompt: string,
   userMessage: string,
 ): Promise<AssistantReply> {
-  const response = await fetch(`${AI_CONFIG.workerUrl}/chat`, {
+  const response = await fetchWithTimeout(`${AI_CONFIG.workerUrl}/chat`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
@@ -119,7 +138,7 @@ async function callGroqDirect(
   systemPrompt: string,
   userMessage: string,
 ): Promise<AssistantReply> {
-  const response = await fetch("https://api.groq.com/openai/v1/chat/completions", {
+  const response = await fetchWithTimeout("https://api.groq.com/openai/v1/chat/completions", {
     method: "POST",
     headers: {
       "Content-Type": "application/json",

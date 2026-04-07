@@ -46,8 +46,14 @@ async function apiFetch<T>(path: string, init?: RequestInit): Promise<T> {
     ...init,
     headers: { "Content-Type": "application/json", ...init?.headers },
   });
-  const data = await res.json();
-  if (!res.ok) throw new Error((data as any).error || `API error ${res.status}`);
+  let data: any;
+  try {
+    data = await res.json();
+  } catch {
+    if (!res.ok) throw new Error(`API error ${res.status}`);
+    throw new Error("Invalid response from server");
+  }
+  if (!res.ok) throw new Error(data?.error || `API error ${res.status}`);
   return data as T;
 }
 

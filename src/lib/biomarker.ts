@@ -99,7 +99,9 @@ export async function stopAndAnalyze(): Promise<BiomarkerReport> {
     await setAudioModeAsync({ allowsRecording: false });
 
     const response = await fetch(uri);
+    if (!response.ok) throw new Error("Could not read recorded audio file");
     const arrayBuffer = await response.arrayBuffer();
+    if (arrayBuffer.byteLength === 0) throw new Error("Recorded audio file is empty — try again");
 
     // Try WAV parsing first (works on native iOS/Android)
     let samples = extractPCMFromWAV(arrayBuffer);
@@ -114,14 +116,25 @@ export async function stopAndAnalyze(): Promise<BiomarkerReport> {
     // Send to worker for WASM analysis
     if (!AI_CONFIG.workerUrl) throw new Error("Server not configured");
 
-    const analyzeResponse = await fetch(`${AI_CONFIG.workerUrl}/analyze`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        samples: Array.from(samples),
-        sampleRate: TARGET_SAMPLE_RATE,
-      }),
-    });
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 30_000);
+    let analyzeResponse: Response;
+    try {
+      analyzeResponse = await fetch(`${AI_CONFIG.workerUrl}/analyze`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          samples: Array.from(samples),
+          sampleRate: TARGET_SAMPLE_RATE,
+        }),
+        signal: controller.signal,
+      });
+    } catch (err: any) {
+      if (err.name === "AbortError") throw new Error("Analysis timed out — check your connection and try again");
+      throw err;
+    } finally {
+      clearTimeout(timeout);
+    }
 
     if (!analyzeResponse.ok) {
       const errBody = await analyzeResponse.json().catch(() => null) as { error?: string } | null;
