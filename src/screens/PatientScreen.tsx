@@ -407,10 +407,28 @@ export function PatientScreen({ navigation, route }: Props) {
         // Save to server for trending
         const record = await saveBiomarkerReport(user.email, report);
         setBiomarkerHistory(prev => [...prev, record]);
-        if (report.status === "alert") {
+        if (report.status === "alert" && activePlan) {
+          // Auto-escalate: send biomarker alert to doctor immediately
+          try {
+            await addCareMessage({
+              doctorEmail: activePlan.doctorEmail,
+              patientEmail: activePlan.patientEmail,
+              senderRole: "patient",
+              senderName: "Tether Biomarker Alert",
+              body: `⚠️ Automatic biomarker alert for ${activePlan.patientName}:\n\n${report.summary}\n\nConfidence: ${Math.round((report.confidence ?? 0) * 100)}%\n\nThis message was sent automatically because the voice analysis returned an alert status.`,
+            });
+            setCareMessages(await getCareMessages(user.email));
+          } catch (escalationError) {
+            console.error("Auto-escalation failed:", escalationError);
+          }
           Alert.alert(
-            "Health Alert",
-            report.summary + "\n\nConsider contacting your care team.",
+            "Health Alert — Doctor Notified",
+            report.summary + "\n\nYour doctor has been automatically notified of this alert.",
+          );
+        } else if (report.status === "monitor") {
+          Alert.alert(
+            "Monitoring",
+            report.summary,
           );
         }
       } catch (error: any) {
