@@ -797,11 +797,21 @@ npx wrangler deploy</code></pre>
         <h2>Engine Connection</h2>
         <p>Tether's two AI engines — NLP (Groq LLM) and Bio-Acoustic (Rust WASM) — share context automatically:</p>
         <ul>
-          <li>The latest biomarker report is injected into the AI system prompt before every chat request</li>
-          <li>When the patient asks "how am I doing?", the AI references actual biomarker readings (breathing rate, cough events, energy levels)</li>
+          <li>The latest biomarker report (including confidence score and all 5 metrics) is injected into the AI system prompt before every chat request</li>
+          <li>When the patient asks "how am I doing?", the AI references actual biomarker readings (breathing rate, cough events, energy levels, zero-crossing rate)</li>
           <li>If biomarkers are in "alert" status, the AI proactively warns the patient and recommends contacting their care team</li>
+          <li>The AI knows the analysis confidence level and can qualify its answers accordingly ("Your latest voice check had moderate confidence — consider recording again in a quieter space")</li>
           <li>One engine listens to the body, the other explains what it means in plain language</li>
         </ul>
+
+        <h3>Automatic Alert Escalation</h3>
+        <p>When a biomarker recording returns <strong>alert</strong> status (2+ flags), Tether automatically sends a care message to the assigned doctor — no patient action needed. The message includes:</p>
+        <ul>
+          <li>Full biomarker summary with actual values and normal ranges</li>
+          <li>Confidence score for the analysis</li>
+          <li>A note that the message was sent automatically by the biomarker system</li>
+        </ul>
+        <p>The patient sees "Health Alert — Doctor Notified" confirming the escalation happened. This means a patient could record a voice check, trigger an alert, and their doctor sees it in their inbox within seconds — all without the patient needing to understand or act on the medical data themselves.</p>
       </section>
 
       <!-- Readability -->
@@ -871,19 +881,33 @@ npx wrangler deploy</code></pre>
 <pre><code>pub fn analyze_audio(samples_i16: &[i16], sample_rate: u32) -> String</code></pre>
         <p>Accepts raw PCM samples and sample rate. Returns a JSON-encoded <code>BiomarkerReport</code>.</p>
 
+        <h3>Signal Quality &amp; Preprocessing</h3>
+        <ul>
+          <li><strong>Signal Quality Gate</strong> — Computes SNR from quartile energy ratios. Recordings with SNR below threshold are rejected with a "record in a quieter environment" message instead of producing misleading results</li>
+          <li><strong>Silence Stripping</strong> — Splits audio into 20ms frames, computes adaptive noise floor at the 20th percentile energy. Removes dead air so metrics reflect actual speech, not silence-diluted averages</li>
+          <li><strong>Confidence Scoring</strong> — 0–1 composite: 30% signal quality + 25% recording duration + 25% active speech ratio + 20% pitch detection hit rate. Shown to patients as High/Moderate/Low badge</li>
+        </ul>
+
         <h3>Signal Processing Pipeline</h3>
         <ul>
-          <li><strong>RMS Energy</strong> — Root mean square of normalized samples. Detects fatigue (low energy)</li>
-          <li><strong>Zero-Crossing Rate</strong> — Frequency of sign changes. Detects breathy/labored speech</li>
-          <li><strong>Breathing Rate</strong> — Low-pass filtered energy envelope, peak counting. Estimates breaths per minute</li>
-          <li><strong>Pitch Variability</strong> — Autocorrelation-based pitch detection, coefficient of variation. Detects vocal tremor</li>
-          <li><strong>Cough Detection</strong> — Sharp energy spikes (>3x mean) followed by silence. Counts distinct cough events</li>
+          <li><strong>RMS Energy</strong> — Root mean square of silence-stripped samples. Detects fatigue (low energy)</li>
+          <li><strong>Zero-Crossing Rate</strong> — Frequency of sign changes on active speech. Detects breathy/labored speech</li>
+          <li><strong>Breathing Rate</strong> — 200ms energy envelope → moving-average low-pass smoothing → peak detection with hysteresis (1.2x/0.8x thresholds). The smoothing step separates real breathing rhythm from speech cadence</li>
+          <li><strong>Pitch Variability</strong> — Autocorrelation-based pitch detection on 100ms overlapping frames (50% hop), lag search 60–500 Hz, correlation strength gate. Returns coefficient of variation across detected pitches</li>
+          <li><strong>Cough Detection</strong> — 30ms frames, sharp energy spikes (&gt;3x mean) followed by silence (&lt;0.5x mean within 150ms). Counts distinct cough events with skip-ahead to prevent double-counting</li>
+        </ul>
+
+        <h3>Rich Summary Generation</h3>
+        <p>Instead of bare flag names, summaries include actual values and normal ranges. Examples:</p>
+        <ul>
+          <li>"Breathing rate is 28/min (normal range: 12–20/min). 3 cough events detected. Consider contacting your care team."</li>
+          <li>"Voice biomarkers are within normal ranges." (with confidence note if recording quality was moderate)</li>
         </ul>
 
         <h3>Building</h3>
 <pre><code>cd biomarker
-wasm-pack build --target web --out-dir ../worker/wasm
-# Output: tether_biomarker_bg.wasm (~49KB) + JS bindings</code></pre>
+wasm-pack build --target web --out-dir ../worker/wasm --release
+# Output: tether_biomarker_bg.wasm (~83KB) + JS bindings</code></pre>
       </section>
 
       <!-- Biomarker Metrics -->
@@ -893,9 +917,10 @@ wasm-pack build --target web --out-dir ../worker/wasm
           <tr><th>Metric</th><th>Range</th><th>Flag Threshold</th><th>Clinical Significance</th></tr>
           <tr><td>Energy (RMS)</td><td>0 – 1</td><td>&lt; 0.02</td><td>Low energy suggests fatigue or weakness</td></tr>
           <tr><td>Zero-Crossing Rate</td><td>0 – 1</td><td>&gt; 0.3</td><td>High ZCR indicates breathy or labored speech</td></tr>
-          <tr><td>Breathing Rate</td><td>BPM</td><td>&gt; 24</td><td>Tachypnea — elevated respiratory rate</td></tr>
+          <tr><td>Breathing Rate</td><td>BPM</td><td>&gt; 24</td><td>Tachypnea — elevated respiratory rate (normal: 12–20)</td></tr>
           <tr><td>Pitch Variability</td><td>CV</td><td>&gt; 0.35</td><td>High variation suggests vocal tremor</td></tr>
           <tr><td>Cough Events</td><td>Count</td><td>&ge; 3</td><td>Frequent coughing in a short sample</td></tr>
+          <tr><td>Confidence</td><td>0 – 1</td><td>N/A</td><td>Composite of SNR, duration, active speech ratio, and pitch detection hit rate. &lt; 0.4 = Low, 0.4–0.7 = Moderate, &gt; 0.7 = High</td></tr>
         </table>
 
         <h3>Status Logic</h3>
