@@ -46,6 +46,8 @@ import {
   getMinRecordingSeconds,
   type BiomarkerReport,
 } from "../lib/biomarker";
+import { useLanguage, SUPPORTED_LANGUAGES, type Language } from "../lib/LanguageContext";
+import { tpl } from "../lib/i18n";
 import type { RootStackParamList } from "../navigation/AppNavigator";
 
 type Props = NativeStackScreenProps<RootStackParamList, "PatientCompanion">;
@@ -59,12 +61,12 @@ function formatTimestamp(value: string): string {
   }).format(new Date(value));
 }
 
-function createGreeting(plan: DoctorPlan): ChatMessage {
+function createGreeting(plan: DoctorPlan, greetingTemplate: string): ChatMessage {
   return {
     id: `assistant-${Date.now()}`,
     role: "assistant",
     urgency: "routine",
-    text: `Hi ${plan.patientName}. I can explain the care plan ${plan.doctorName} entered for you. Ask me what to do today, when to call the doctor, or what your medicines are for.`,
+    text: tpl(greetingTemplate, { name: plan.patientName, doctor: plan.doctorName }),
   };
 }
 
@@ -83,10 +85,10 @@ function ThinkingDot({ delay }: { delay: number }) {
   return <Animated.View style={[thinkingStyles.dot, { opacity }]} />;
 }
 
-function ThinkingBubble() {
+function ThinkingBubble({ label }: { label: string }) {
   return (
     <View style={thinkingStyles.bubble}>
-      <Text style={thinkingStyles.label}>Tether AI</Text>
+      <Text style={thinkingStyles.label}>{label}</Text>
       <View style={thinkingStyles.dots}>
         <ThinkingDot delay={0} />
         <ThinkingDot delay={150} />
@@ -125,6 +127,7 @@ const thinkingStyles = StyleSheet.create({
 
 export function PatientScreen({ navigation, route }: Props) {
   const { user } = route.params;
+  const { language, setLanguage: setContextLanguage, i } = useLanguage();
 
   const [activePlan, setActivePlan] = useState<DoctorPlan | null>(null);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
@@ -141,7 +144,6 @@ export function PatientScreen({ navigation, route }: Props) {
   const [biomarkerHistory, setBiomarkerHistory] = useState<BiomarkerRecord[]>([]);
   const [isBiomarkerRecording, setIsBiomarkerRecording] = useState(false);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
-  const [language, setLanguage] = useState(user.language || "English");
   const finalVoiceTranscriptRef = useRef("");
   const [recordingSeconds, setRecordingSeconds] = useState(0);
 
@@ -172,10 +174,10 @@ export function PatientScreen({ navigation, route }: Props) {
             ) ?? null;
           setActivePlan(plan);
           if (plan) {
-            setMessages([createGreeting(plan)]);
+            setMessages([createGreeting(plan, i.greetingText)]);
           }
         } else {
-          Alert.alert("Connection Error", "Could not load your care plan. Pull down to refresh or restart the app.");
+          Alert.alert(i.connectionError, i.connectionErrorMsg);
         }
 
         try {
@@ -185,7 +187,7 @@ export function PatientScreen({ navigation, route }: Props) {
         }
       } catch (error) {
         console.error("Failed to load patient data:", error);
-        Alert.alert("Error", "Could not connect to the server. Check your internet connection.");
+        Alert.alert(i.error, i.genericErrorMsg);
       }
     })();
 
@@ -295,7 +297,7 @@ export function PatientScreen({ navigation, route }: Props) {
         {
           id: `assistant-${Date.now()}`,
           role: "assistant",
-          text: "Sorry, I had trouble generating a response. Please try again or message your doctor directly.",
+          text: i.aiErrorMsg,
           urgency: "routine",
         },
       ]);
@@ -341,7 +343,7 @@ export function PatientScreen({ navigation, route }: Props) {
         {
           id: `assistant-${Date.now()}`,
           role: "assistant",
-          text: "Sorry, I had trouble generating a response. Please try again or message your doctor directly.",
+          text: i.aiErrorMsg,
           urgency: "routine",
         },
       ]);
@@ -354,10 +356,7 @@ export function PatientScreen({ navigation, route }: Props) {
     if (!activePlan) return;
 
     if (!voiceSupported) {
-      Alert.alert(
-        "Voice unavailable",
-        "Speech recognition is not currently available on this device or simulator.",
-      );
+      Alert.alert(i.voiceBiomarkersTitle, i.voiceUnavailable);
       return;
     }
 
@@ -395,8 +394,8 @@ export function PatientScreen({ navigation, route }: Props) {
       const elapsed = getRecordingElapsedSeconds();
       if (elapsed < getMinRecordingSeconds()) {
         Alert.alert(
-          "Keep Recording",
-          `Please record for at least ${getMinRecordingSeconds()} seconds. You've recorded ${Math.round(elapsed)} seconds so far.`,
+          i.keepRecording,
+          tpl(i.keepRecordingMsg, { min: getMinRecordingSeconds(), current: Math.round(elapsed) }),
         );
         return;
       }
@@ -422,18 +421,18 @@ export function PatientScreen({ navigation, route }: Props) {
             console.error("Auto-escalation failed:", escalationError);
           }
           Alert.alert(
-            "Health Alert — Doctor Notified",
-            report.summary + "\n\nYour doctor has been automatically notified of this alert.",
+            i.healthAlertTitle,
+            report.summary + "\n\n" + i.healthAlertSuffix,
           );
         } else if (report.status === "monitor") {
           Alert.alert(
-            "Monitoring",
+            i.monitoring,
             report.summary,
           );
         }
       } catch (error: any) {
         const message = error?.message || "Analysis failed. Please try again.";
-        Alert.alert("Biomarker Error", message);
+        Alert.alert(i.biomarkerError, message);
         console.error("Biomarker error:", error);
       } finally {
         setIsBiomarkerRecording(false);
@@ -469,15 +468,15 @@ export function PatientScreen({ navigation, route }: Props) {
       });
       setCareMessages(await getCareMessages(user.email));
       setCareMessageInput("");
-      Alert.alert("Sent", `Your message was sent to ${activePlan.doctorName}.`);
+      Alert.alert(i.sent, tpl(i.messageSentTo, { name: activePlan.doctorName }));
     } catch (error) {
-      Alert.alert("Error", "Failed to send message. Please try again.");
+      Alert.alert(i.error, i.sendFailed);
       console.error("Send message error:", error);
     }
   }
 
-  async function handleLanguageChange(lang: string) {
-    setLanguage(lang);
+  async function handleLanguageChange(lang: Language) {
+    setContextLanguage(lang);
     try {
       await setUserLanguage(user.email, lang);
       await cacheUser({ ...user, language: lang });
@@ -495,22 +494,22 @@ export function PatientScreen({ navigation, route }: Props) {
   return (
     <>
       <View style={styles.heroCard}>
-        <Text style={styles.kicker}>Patient Companion</Text>
+        <Text style={styles.kicker}>{i.patientCompanion}</Text>
         <Text style={styles.heroTitle}>{user.name}</Text>
         <Text style={styles.heroText}>
-          Logged in as {user.email}. Your app only shows plans that were published to your patient email.
+          {i.patientHeroText}
         </Text>
         <Text style={styles.heroSubtext}>
-          If symptoms feel severe, new, or unsafe, seek urgent medical help and do not wait for chat responses.
+          {i.patientHeroSubtext}
         </Text>
         <Pressable style={styles.secondaryButton} onPress={() => void handleLogout()}>
-          <Text style={styles.secondaryButtonText}>Log Out</Text>
+          <Text style={styles.secondaryButtonText}>{i.logOut}</Text>
         </Pressable>
       </View>
 
-      <SectionCard title="Language" subtitle="AI responses and voice output will use your preferred language.">
+      <SectionCard title={i.languageTitle} subtitle={i.languageSubtitle}>
         <View style={styles.promptWrap}>
-          {["English", "Spanish", "Hindi", "Mandarin", "French", "Arabic"].map((lang) => (
+          {SUPPORTED_LANGUAGES.map((lang) => (
             <Pressable
               key={lang}
               style={[styles.promptChip, language === lang && styles.promptChipActive]}
@@ -524,59 +523,59 @@ export function PatientScreen({ navigation, route }: Props) {
 
       {!activePlan ? (
         <SectionCard
-          title="No Plan Assigned Yet"
-          subtitle="Ask your doctor to publish a plan to your patient email address."
+          title={i.noPlanTitle}
+          subtitle={i.noPlanSubtitle}
         >
           <Text style={styles.previewText}>
-            No published recovery plan matches {user.email} yet. Once a doctor publishes one to this email, it will appear here.
+            {i.noPlanText}
           </Text>
         </SectionCard>
       ) : (
         <>
           <SectionCard
-            title={`${activePlan.patientName}'s Recovery Plan`}
-            subtitle={`Published by ${activePlan.doctorName} on ${formatTimestamp(activePlan.lastUpdatedAt)}`}
+            title={`${activePlan.patientName} — ${i.recoveryPlan}`}
+            subtitle={`${i.publishedBy} ${activePlan.doctorName} · ${formatTimestamp(activePlan.lastUpdatedAt)}`}
           >
             <View style={styles.escalationBanner}>
               <Text style={styles.escalationBannerText}>
-                Emergency symptoms should never wait for an AI or message reply. If you feel unsafe, seek immediate medical help.
+                {i.emergencyWarning}
               </Text>
             </View>
 
             <View style={styles.previewGrid}>
-              <SummaryPill label="Heart Rate" value={activePlan.heartRate} />
-              <SummaryPill label="Blood Pressure" value={activePlan.bloodPressure} />
-              <SummaryPill label="Temperature" value={activePlan.temperature} />
-              <SummaryPill label="Oxygen" value={activePlan.oxygenSaturation} />
+              <SummaryPill label={i.heartRate} value={activePlan.heartRate} />
+              <SummaryPill label={i.bloodPressure} value={activePlan.bloodPressure} />
+              <SummaryPill label={i.temperature} value={activePlan.temperature} />
+              <SummaryPill label={i.oxygen} value={activePlan.oxygenSaturation} />
             </View>
 
             <View style={styles.listCard}>
-              <Text style={styles.listTitle}>What to do today</Text>
+              <Text style={styles.listTitle}>{i.whatToDoToday}</Text>
               {activePlan.dailyInstructions.map((item) => (
                 <Text key={item} style={styles.listItem}>• {item}</Text>
               ))}
             </View>
 
             <View style={styles.listCard}>
-              <Text style={styles.listTitle}>Call for help if you notice</Text>
+              <Text style={styles.listTitle}>{i.callForHelp}</Text>
               {activePlan.redFlags.map((item) => (
                 <Text key={item} style={styles.listItem}>• {item}</Text>
               ))}
             </View>
           </SectionCard>
 
-          <SectionCard title="Ask Tether AI" subtitle="Voice and text answers are based on the doctor's published plan.">
+          <SectionCard title={i.askTetherAI} subtitle={i.askAISubtitle}>
             <View style={styles.voiceStatusRow}>
               <View style={[styles.statusDot, voiceSupported ? styles.statusGood : styles.statusMuted]} />
               <Text style={styles.voiceStatusText}>
-                {voiceSupported ? "Voice recognition available" : "Voice recognition unavailable on this device"}
+                {voiceSupported ? i.voiceAvailable : i.voiceUnavailable}
               </Text>
               <Pressable
                 onPress={() => setAudioRepliesEnabled((v) => !v)}
                 style={[styles.audioToggle, audioRepliesEnabled && styles.audioToggleActive]}
               >
                 <Text style={[styles.audioToggleText, audioRepliesEnabled && styles.audioToggleTextActive]}>
-                  {audioRepliesEnabled ? "Voice Reply On" : "Voice Reply Off"}
+                  {audioRepliesEnabled ? i.voiceReplyOn : i.voiceReplyOff}
                 </Text>
               </Pressable>
             </View>
@@ -585,7 +584,7 @@ export function PatientScreen({ navigation, route }: Props) {
 
             {liveTranscript ? (
               <View style={styles.transcriptCard}>
-                <Text style={styles.transcriptLabel}>Listening</Text>
+                <Text style={styles.transcriptLabel}>{i.listening}</Text>
                 <Text style={styles.transcriptText}>{liveTranscript}</Text>
               </View>
             ) : null}
@@ -599,7 +598,7 @@ export function PatientScreen({ navigation, route }: Props) {
               {messages.map((msg) => (
                 <MessageBubble key={msg.id} message={msg} />
               ))}
-              {isThinking ? <ThinkingBubble /> : null}
+              {isThinking ? <ThinkingBubble label={i.tetherAI} /> : null}
             </ScrollView>
 
             <View style={styles.promptWrap}>
@@ -617,7 +616,7 @@ export function PatientScreen({ navigation, route }: Props) {
             <TextInput
               value={patientInput}
               onChangeText={setPatientInput}
-              placeholder="Type the patient's question..."
+              placeholder={i.typeQuestion}
               placeholderTextColor="#94a3b8"
               style={styles.chatInput}
               multiline
@@ -625,42 +624,42 @@ export function PatientScreen({ navigation, route }: Props) {
 
             <View style={styles.buttonRow}>
               <AnimatedButton
-                label="Send to AI"
+                label={i.sendToAI}
                 variant="primary"
                 onPress={() => void submitPatientMessage()}
-                accessibilityLabel="Send message to Tether AI"
+                accessibilityLabel={i.sendToAI}
               />
               <AnimatedButton
-                label={isListening ? "Stop Listening" : "Start Voice Chat"}
+                label={isListening ? i.stopListening : i.startVoiceChat}
                 variant={isListening ? "voiceActive" : "voice"}
                 onPress={() => void handleVoiceToggle()}
-                accessibilityLabel={isListening ? "Stop voice recognition" : "Start voice recognition"}
+                accessibilityLabel={isListening ? i.stopListening : i.startVoiceChat}
               />
             </View>
           </SectionCard>
 
           <SectionCard
-            title="Voice Biomarkers"
-            subtitle="Record a voice sample to analyze breathing, cough patterns, and vocal health."
+            title={i.voiceBiomarkers}
+            subtitle={i.biomarkerSubtitle}
           >
             <View style={styles.buttonRow}>
               <AnimatedButton
                 label={
                   isAnalyzing
-                    ? "Analyzing..."
+                    ? i.analyzing
                     : isBiomarkerRecording
-                      ? `Stop & Analyze (${recordingSeconds}s)`
-                      : "Start Voice Check"
+                      ? `${i.stopAnalyze} (${recordingSeconds}s)`
+                      : i.startVoiceCheck
                 }
                 variant={isBiomarkerRecording ? "voiceActive" : "voice"}
                 onPress={() => void handleBiomarkerToggle()}
                 disabled={isAnalyzing}
                 accessibilityLabel={
                   isAnalyzing
-                    ? "Analyzing voice biomarkers"
+                    ? i.analyzing
                     : isBiomarkerRecording
-                      ? `Stop recording. ${recordingSeconds} seconds recorded`
-                      : "Start voice biomarker recording"
+                      ? `${i.stopAnalyze} (${recordingSeconds}s)`
+                      : i.startVoiceCheck
                 }
               />
             </View>
@@ -668,7 +667,7 @@ export function PatientScreen({ navigation, route }: Props) {
               <View style={styles.recordingCard}>
                 <View style={styles.recordingHeader}>
                   <View style={styles.recordingDot} />
-                  <Text style={styles.recordingLabel}>Recording — {recordingSeconds}s</Text>
+                  <Text style={styles.recordingLabel}>{i.recording} — {recordingSeconds}s</Text>
                 </View>
                 <View style={styles.recordingProgress}>
                   <View
@@ -683,8 +682,8 @@ export function PatientScreen({ navigation, route }: Props) {
                 </View>
                 <Text style={styles.recordingHint}>
                   {recordingSeconds < getMinRecordingSeconds()
-                    ? `Keep going — ${getMinRecordingSeconds() - recordingSeconds}s more needed`
-                    : "Good recording length. Tap Stop & Analyze when ready."}
+                    ? `${i.keepGoing} — ${getMinRecordingSeconds() - recordingSeconds}s`
+                    : i.goodLength}
                 </Text>
               </View>
             ) : null}
@@ -692,13 +691,13 @@ export function PatientScreen({ navigation, route }: Props) {
           </SectionCard>
 
           <SectionCard
-            title={`Message ${activePlan.doctorName}`}
-            subtitle="Use this when you want a human answer or the AI tells you it may not have enough information."
+            title={tpl(i.messageDoctorTitle, { name: activePlan.doctorName })}
+            subtitle={i.messageDoctorSubtitle}
           >
             {latestAssistantMessage?.handoffSuggested ? (
               <View style={styles.escalationBanner}>
                 <Text style={styles.escalationBannerText}>
-                  Tether AI recommends messaging your doctor for this situation.
+                  {i.aiRecommendsMsgDoctor}
                 </Text>
                 <Pressable
                   style={styles.secondaryButton}
@@ -708,7 +707,7 @@ export function PatientScreen({ navigation, route }: Props) {
                     )
                   }
                 >
-                  <Text style={styles.secondaryButtonText}>Send Quick Help Request</Text>
+                  <Text style={styles.secondaryButtonText}>{i.sendQuickHelpRequest}</Text>
                 </Pressable>
               </View>
             ) : null}
@@ -717,7 +716,7 @@ export function PatientScreen({ navigation, route }: Props) {
               <View style={styles.emptyState}>
                 <Text style={styles.emptyStateIcon}>💬</Text>
                 <Text style={styles.emptyStateText}>
-                  No messages yet. Send a message to {activePlan.doctorName} when you need human guidance.
+                  {i.noMessagesYet} {tpl(i.noMessagesHint, { name: activePlan.doctorName })}
                 </Text>
               </View>
             ) : (
@@ -748,27 +747,27 @@ export function PatientScreen({ navigation, route }: Props) {
             <TextInput
               value={careMessageInput}
               onChangeText={setCareMessageInput}
-              placeholder="Write a message to your doctor..."
+              placeholder={i.writeMessagePlaceholder}
               placeholderTextColor="#94a3b8"
               style={styles.chatInput}
               multiline
             />
 
             <AnimatedButton
-              label="Message Doctor"
+              label={i.messageDoctor}
               variant="primary"
               onPress={() => void sendMessageToDoctor()}
-              accessibilityLabel={`Send message to ${activePlan.doctorName}`}
+              accessibilityLabel={i.messageDoctor}
             />
           </SectionCard>
 
-          <SectionCard title="Account & Safety" subtitle="Clear patient-facing safeguards.">
+          <SectionCard title={i.accountSafety} subtitle={i.accountSafetySubtitle}>
             <View style={styles.previewGrid}>
-              <SummaryPill label="Role" value="Patient" />
-              <SummaryPill label="Assigned Doctor" value={activePlan.doctorName} />
+              <SummaryPill label={i.role} value={i.patient} />
+              <SummaryPill label={i.assignedDoctor} value={activePlan.doctorName} />
             </View>
             <Text style={styles.previewText}>
-              Tether helps explain your doctor's plan, but it does not replace urgent care, emergency services, or a direct clinical assessment.
+              {i.safetyDisclaimer}
             </Text>
           </SectionCard>
         </>

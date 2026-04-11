@@ -1,6 +1,7 @@
 import { View, Text, StyleSheet } from "react-native";
 import type { AssistantUrgency } from "../lib/showcase";
 import { fleschKincaidGradeLevel, readabilityLabel } from "../lib/readability";
+import { useLanguage } from "../lib/LanguageContext";
 
 export type ChatMessage = {
   id: string;
@@ -10,20 +11,21 @@ export type ChatMessage = {
   handoffSuggested?: boolean;
 };
 
-function urgencyLabel(urgency?: AssistantUrgency): string {
-  switch (urgency) {
-    case "urgent":
-      return "Urgent";
-    case "contact-clinician":
-      return "Contact Clinician";
-    case "routine":
-    default:
-      return "Routine";
-  }
-}
-
 export function MessageBubble({ message }: { message: ChatMessage }) {
+  const { i } = useLanguage();
   const isAssistant = message.role === "assistant";
+
+  function urgencyLabel(urgency?: AssistantUrgency): string {
+    switch (urgency) {
+      case "urgent":
+        return i.urgent;
+      case "contact-clinician":
+        return i.contactClinician;
+      case "routine":
+      default:
+        return i.routine;
+    }
+  }
   const grade = isAssistant ? fleschKincaidGradeLevel(message.text) : null;
   const gradeLabel = grade !== null ? readabilityLabel(grade) : null;
 
@@ -36,13 +38,13 @@ export function MessageBubble({ message }: { message: ChatMessage }) {
     >
       <View style={styles.messageHeader}>
         <Text style={styles.messageRole}>
-          {isAssistant ? "Tether AI" : "Patient"}
+          {isAssistant ? i.tetherAI : i.patient}
         </Text>
         <View style={styles.badgeRow}>
           {isAssistant && grade !== null ? (
             <View style={[styles.readabilityBadge, grade <= 6 ? styles.readabilityGood : grade <= 10 ? styles.readabilityOk : styles.readabilityHigh]}>
               <Text style={styles.readabilityText}>
-                Grade {grade} · {gradeLabel}
+                {i.grade} {grade} · {gradeLabel}
               </Text>
             </View>
           ) : null}
@@ -65,8 +67,7 @@ export function MessageBubble({ message }: { message: ChatMessage }) {
       <Text style={styles.messageText}>{message.text}</Text>
       {message.role === "assistant" && message.handoffSuggested ? (
         <Text style={styles.handoffHint}>
-          Not enough certainty for a full answer. Use the doctor messaging box
-          below for human follow-up.
+          {i.handoffHint}
         </Text>
       ) : null}
     </View>

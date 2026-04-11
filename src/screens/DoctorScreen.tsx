@@ -29,18 +29,13 @@ import {
   type UserAccount,
 } from "../lib/appData";
 import { demoDoctorPlan, summarizePlan, type DoctorPlan } from "../lib/showcase";
+import { useLanguage } from "../lib/LanguageContext";
 import type { RootStackParamList } from "../navigation/AppNavigator";
 
 type Tone = DoctorPlan["tone"];
 type Props = NativeStackScreenProps<RootStackParamList, "DoctorWorkspace">;
 
-function toneLabel(tone: Tone): string {
-  switch (tone) {
-    case "calm": return "Calm";
-    case "direct": return "Direct";
-    case "reassuring": return "Reassuring";
-  }
-}
+// toneLabel is now inside the component to access translations
 
 function formatTimestamp(value: string): string {
   return new Intl.DateTimeFormat("en", {
@@ -65,6 +60,15 @@ function isValidEmail(value: string): boolean {
 
 export function DoctorScreen({ navigation, route }: Props) {
   const { user } = route.params;
+  const { i } = useLanguage();
+
+  function toneLabel(tone: Tone): string {
+    switch (tone) {
+      case "calm": return i.calm;
+      case "direct": return i.direct;
+      case "reassuring": return i.reassuring;
+    }
+  }
 
   const [publishedPlans, setPublishedPlans] = useState<DoctorPlan[]>([]);
   const [careMessages, setCareMessages] = useState<CareMessage[]>([]);
@@ -167,16 +171,13 @@ export function DoctorScreen({ navigation, route }: Props) {
 
   async function publishPlan() {
     if (!draftPlan.patientName.trim() || !draftPlan.patientEmail.trim()) {
-      Alert.alert(
-        "Missing patient details",
-        "Add the patient name and patient email before publishing the plan.",
-      );
+      Alert.alert(i.missingPatient, i.missingPatientMsg);
       return;
     }
 
     const normalizedPatientEmail = normalizeEmail(draftPlan.patientEmail);
     if (!isValidEmail(normalizedPatientEmail)) {
-      Alert.alert("Invalid patient email", "Enter a valid patient email address.");
+      Alert.alert(i.invalidPatientEmail, i.invalidPatientEmailMsg);
       return;
     }
 
@@ -193,10 +194,7 @@ export function DoctorScreen({ navigation, route }: Props) {
       setPublishedPlans(await getPublishedPlans(user.email));
       setDraftPlan(nextPlan);
 
-      Alert.alert(
-        "Plan published",
-        "The assigned patient can now see this plan after logging in.",
-      );
+      Alert.alert(i.planPublished, i.planPublishedMsg);
     } catch (error: any) {
       Alert.alert("Error", error.message || "Failed to publish plan.");
       console.error("Publish error:", error);
@@ -219,7 +217,7 @@ export function DoctorScreen({ navigation, route }: Props) {
       setPublishedPlans(await getPublishedPlans(user.email));
       setCareMessages(await getCareMessages(user.email));
     } catch (error) {
-      Alert.alert("Refresh Failed", "Could not load latest data. Check your connection and try again.");
+      Alert.alert(i.refreshFailed, i.refreshFailedMsg);
       console.error("Failed to refresh:", error);
     }
   }
@@ -245,7 +243,7 @@ export function DoctorScreen({ navigation, route }: Props) {
       setCareMessages(await getCareMessages(user.email));
       setDoctorReplyInput("");
     } catch (error) {
-      Alert.alert("Error", "Failed to send reply.");
+      Alert.alert(i.error, i.sendFailed);
       console.error("Reply error:", error);
     }
   }
@@ -253,59 +251,58 @@ export function DoctorScreen({ navigation, route }: Props) {
   return (
     <>
       <View style={styles.heroCard}>
-        <Text style={styles.kicker}>Doctor Workspace</Text>
+        <Text style={styles.kicker}>{i.doctorWorkspace}</Text>
         <Text style={styles.heroTitle}>{user.name}</Text>
         <Text style={styles.heroText}>
-          Logged in as {user.email}. Publish a plan for a patient email and that
-          patient account will see it after login.
+          {i.doctorHeroText}
         </Text>
         <Text style={styles.heroSubtext}>
-          Publishing is locked to real patient accounts so plans are not sent into the wrong inbox.
+          {i.doctorHeroSubtext}
         </Text>
         <View style={styles.buttonRow}>
-          <AnimatedButton label="Reset Draft" variant="secondary" onPress={() => void loadDoctorStarter()} />
-          <AnimatedButton label="Log Out" variant="secondary" onPress={() => void handleLogout()} />
+          <AnimatedButton label={i.resetDraft} variant="secondary" onPress={() => void loadDoctorStarter()} />
+          <AnimatedButton label={i.logOut} variant="secondary" onPress={() => void handleLogout()} />
         </View>
       </View>
 
-      <SectionCard title="Publish Patient Plan" subtitle="This screen is only for doctor accounts.">
+      <SectionCard title={i.publishPatientPlan} subtitle={i.doctorOnlySubtitle}>
         <View style={styles.buttonRow}>
-          <AnimatedButton label="Publish Plan" variant="primary" onPress={() => void publishPlan()} accessibilityLabel="Publish care plan to patient" />
-          <AnimatedButton label="Refresh Plans" variant="secondary" onPress={() => void refreshPlans()} />
+          <AnimatedButton label={i.publishPlan} variant="primary" onPress={() => void publishPlan()} accessibilityLabel={i.publishPlan} />
+          <AnimatedButton label={i.refreshPlans} variant="secondary" onPress={() => void refreshPlans()} />
         </View>
 
         <View style={styles.dualRow}>
-          <InputField label="Doctor" value={draftPlan.doctorName} onChangeText={(v) => updateField("doctorName", v)} placeholder="Dr. Sana Malik" />
-          <InputField label="Doctor email" value={draftPlan.doctorEmail} onChangeText={(v) => updateField("doctorEmail", v)} placeholder="doctor@tether.app" keyboardType="email-address" autoCapitalize="none" />
+          <InputField label={i.doctorLabel} value={draftPlan.doctorName} onChangeText={(v) => updateField("doctorName", v)} placeholder="Dr. Sana Malik" />
+          <InputField label={i.doctorEmail} value={draftPlan.doctorEmail} onChangeText={(v) => updateField("doctorEmail", v)} placeholder="doctor@tether.app" keyboardType="email-address" autoCapitalize="none" />
         </View>
 
         <View style={styles.dualRow}>
-          <InputField label="Patient" value={draftPlan.patientName} onChangeText={(v) => updateField("patientName", v)} placeholder="Ava Thompson" />
-          <InputField label="Patient email" value={draftPlan.patientEmail} onChangeText={(v) => updateField("patientEmail", v)} placeholder="patient@tether.app" keyboardType="email-address" autoCapitalize="none" />
+          <InputField label={i.patientLabel} value={draftPlan.patientName} onChangeText={(v) => updateField("patientName", v)} placeholder="Ava Thompson" />
+          <InputField label={i.patientEmail} value={draftPlan.patientEmail} onChangeText={(v) => updateField("patientEmail", v)} placeholder="patient@tether.app" keyboardType="email-address" autoCapitalize="none" />
         </View>
 
         <View style={styles.dualRow}>
-          <InputField label="Age" value={draftPlan.age} onChangeText={(v) => updateField("age", v)} placeholder="67" />
-          <InputField label="Diagnosis" value={draftPlan.diagnosis} onChangeText={(v) => updateField("diagnosis", v)} placeholder="Post-discharge pneumonia recovery" />
+          <InputField label={i.age} value={draftPlan.age} onChangeText={(v) => updateField("age", v)} placeholder="67" />
+          <InputField label={i.diagnosis} value={draftPlan.diagnosis} onChangeText={(v) => updateField("diagnosis", v)} placeholder="Post-discharge pneumonia recovery" />
         </View>
 
-        <InputField label="Symptoms and condition" value={draftPlan.symptomSummary} onChangeText={(v) => updateField("symptomSummary", v)} placeholder="Fatigue, mild cough..." multiline />
+        <InputField label={i.symptomsCondition} value={draftPlan.symptomSummary} onChangeText={(v) => updateField("symptomSummary", v)} placeholder="Fatigue, mild cough..." multiline />
 
         <View style={styles.quadRow}>
-          <InputField label="Heart Rate" value={draftPlan.heartRate} onChangeText={(v) => updateField("heartRate", v)} placeholder="96 bpm" />
-          <InputField label="Blood Pressure" value={draftPlan.bloodPressure} onChangeText={(v) => updateField("bloodPressure", v)} placeholder="126/78 mmHg" />
-          <InputField label="Temperature" value={draftPlan.temperature} onChangeText={(v) => updateField("temperature", v)} placeholder="37.4 C" />
-          <InputField label="Oxygen" value={draftPlan.oxygenSaturation} onChangeText={(v) => updateField("oxygenSaturation", v)} placeholder="93%" />
+          <InputField label={i.heartRate} value={draftPlan.heartRate} onChangeText={(v) => updateField("heartRate", v)} placeholder="96 bpm" />
+          <InputField label={i.bloodPressure} value={draftPlan.bloodPressure} onChangeText={(v) => updateField("bloodPressure", v)} placeholder="126/78 mmHg" />
+          <InputField label={i.temperature} value={draftPlan.temperature} onChangeText={(v) => updateField("temperature", v)} placeholder="37.4 C" />
+          <InputField label={i.oxygen} value={draftPlan.oxygenSaturation} onChangeText={(v) => updateField("oxygenSaturation", v)} placeholder="93%" />
         </View>
 
-        <InputField label="Medications (one per line)" value={joinLines(draftPlan.medications)} onChangeText={(v) => updateListField("medications", v)} placeholder="Amoxicillin 500 mg three times daily" multiline />
-        <InputField label="Daily instructions (one per line)" value={joinLines(draftPlan.dailyInstructions)} onChangeText={(v) => updateListField("dailyInstructions", v)} placeholder="Rest and hydrate" multiline />
-        <InputField label="Red flags (one per line)" value={joinLines(draftPlan.redFlags)} onChangeText={(v) => updateListField("redFlags", v)} placeholder="Fever above 38 C" multiline />
-        <InputField label="Follow-up" value={draftPlan.followUp} onChangeText={(v) => updateField("followUp", v)} placeholder="Nurse call tomorrow morning" multiline />
-        <InputField label="Doctor note for AI tone" value={draftPlan.doctorNotes} onChangeText={(v) => updateField("doctorNotes", v)} placeholder="Explain in simple language." multiline />
+        <InputField label={i.medications} value={joinLines(draftPlan.medications)} onChangeText={(v) => updateListField("medications", v)} placeholder="Amoxicillin 500 mg three times daily" multiline />
+        <InputField label={i.dailyInstructions} value={joinLines(draftPlan.dailyInstructions)} onChangeText={(v) => updateListField("dailyInstructions", v)} placeholder="Rest and hydrate" multiline />
+        <InputField label={i.redFlags} value={joinLines(draftPlan.redFlags)} onChangeText={(v) => updateListField("redFlags", v)} placeholder="Fever above 38 C" multiline />
+        <InputField label={i.followUp} value={draftPlan.followUp} onChangeText={(v) => updateField("followUp", v)} placeholder="Nurse call tomorrow morning" multiline />
+        <InputField label={i.doctorNoteAI} value={draftPlan.doctorNotes} onChangeText={(v) => updateField("doctorNotes", v)} placeholder="Explain in simple language." multiline />
 
         <View style={styles.inputGroup}>
-          <FieldLabel>Patient-facing tone</FieldLabel>
+          <FieldLabel>{i.patientTone}</FieldLabel>
           <View style={styles.toneRow}>
             {(["calm", "direct", "reassuring"] as Tone[]).map((tone) => (
               <Pressable
@@ -322,29 +319,27 @@ export function DoctorScreen({ navigation, route }: Props) {
         </View>
       </SectionCard>
 
-      <SectionCard title="Published Plan Preview" subtitle="This is what the patient companion will summarize.">
+      <SectionCard title={i.publishedPreview} subtitle={i.publishedPreviewSubtitle}>
         <Text style={styles.previewText}>{summarizePlan(draftPlan)}</Text>
         <View style={styles.previewGrid}>
-          <SummaryPill label="Patient" value={draftPlan.patientName || "Not set"} />
-          <SummaryPill label="Patient Email" value={draftPlan.patientEmail || "Not set"} />
-          <SummaryPill label="Tone" value={toneLabel(draftPlan.tone)} />
-          <SummaryPill label="Updated" value={formatTimestamp(draftPlan.lastUpdatedAt)} />
+          <SummaryPill label={i.patientLabel} value={draftPlan.patientName || i.notSet} />
+          <SummaryPill label={i.patientEmail} value={draftPlan.patientEmail || i.notSet} />
+          <SummaryPill label={i.tone} value={toneLabel(draftPlan.tone)} />
+          <SummaryPill label={i.updated} value={formatTimestamp(draftPlan.lastUpdatedAt)} />
         </View>
       </SectionCard>
 
-      <SectionCard title="Account & Safety" subtitle="Release-facing product guardrails for the doctor workspace.">
+      <SectionCard title={i.accountSafetyDoctor} subtitle={i.accountSafetyDoctorSubtitle}>
         <View style={styles.previewGrid}>
-          <SummaryPill label="Role" value="Doctor" />
-          <SummaryPill label="Signed in as" value={user.email} />
+          <SummaryPill label={i.role} value={i.doctor} />
+          <SummaryPill label={i.signedInAs} value={user.email} />
         </View>
         <Text style={styles.previewText}>
-          Do not use this app as a replacement for emergency escalation, diagnosis,
-          or unmanaged medical decision-making. Published plans should be reviewed
-          for accuracy before release to the patient.
+          {i.doctorSafetyText}
         </Text>
       </SectionCard>
 
-      <SectionCard title="Patient Messages" subtitle="Patients can ask for human help here when AI is not enough.">
+      <SectionCard title={i.patientMessages} subtitle={i.patientMessagesSubtitle}>
         {doctorThreadOptions.length > 0 ? (
           <>
             <View style={styles.promptWrap}>
@@ -395,17 +390,17 @@ export function DoctorScreen({ navigation, route }: Props) {
             <TextInput
               value={doctorReplyInput}
               onChangeText={setDoctorReplyInput}
-              placeholder="Reply to this patient..."
+              placeholder={i.replyPlaceholder}
               placeholderTextColor="#94a3b8"
               style={styles.chatInput}
               multiline
             />
 
-            <AnimatedButton label="Send Reply" variant="primary" onPress={() => void sendDoctorReply()} accessibilityLabel="Send reply to patient" />
+            <AnimatedButton label={i.sendReply} variant="primary" onPress={() => void sendDoctorReply()} accessibilityLabel={i.sendReply} />
           </>
         ) : (
           <Text style={styles.previewText}>
-            No patient messages yet. Once a patient asks for help, the conversation will appear here.
+            {i.noPatientMessages}
           </Text>
         )}
       </SectionCard>

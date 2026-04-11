@@ -1,19 +1,14 @@
 import { View, Text, StyleSheet } from "react-native";
 import type { BiomarkerReport } from "../lib/biomarker";
 import type { BiomarkerRecord } from "../lib/appData";
+import { useLanguage } from "../lib/LanguageContext";
+import { tpl } from "../lib/i18n";
 
 const STATUS_COLORS = {
   normal: { bg: "#dcfce7", text: "#166534" },
   monitor: { bg: "#fef3c7", text: "#92400e" },
   alert: { bg: "#fee2e2", text: "#991b1b" },
 } as const;
-
-const METRIC_EXPLANATIONS: Record<string, string> = {
-  "Voice Energy": "How strong your voice sounds. Low values may indicate fatigue.",
-  "Breathing Rate": "Estimated breaths per minute. Normal is 12–20/min.",
-  "Pitch Variability": "How much your voice pitch fluctuates. High values may indicate tremor.",
-  "Cough Events": "Number of cough-like bursts detected in the recording.",
-};
 
 function deltaArrow(current: number, previous: number | undefined): string {
   if (previous === undefined) return "";
@@ -48,16 +43,16 @@ function Metric({
   );
 }
 
-function ConfidenceBadge({ confidence }: { confidence: number }) {
+function ConfidenceBadge({ confidence, labels }: { confidence: number; labels: { high: string; moderate: string; low: string; confidence: string } }) {
   const pct = Math.round(confidence * 100);
   const color = confidence >= 0.7 ? "#166534" : confidence >= 0.4 ? "#92400e" : "#991b1b";
   const bg = confidence >= 0.7 ? "#dcfce7" : confidence >= 0.4 ? "#fef3c7" : "#fee2e2";
-  const label = confidence >= 0.7 ? "High" : confidence >= 0.4 ? "Moderate" : "Low";
+  const label = confidence >= 0.7 ? labels.high : confidence >= 0.4 ? labels.moderate : labels.low;
 
   return (
     <View style={[styles.confidenceBadge, { backgroundColor: bg }]}>
       <Text style={[styles.confidenceText, { color }]}>
-        {label} confidence ({pct}%)
+        {label} {labels.confidence} ({pct}%)
       </Text>
     </View>
   );
@@ -93,6 +88,7 @@ export function BiomarkerCard({
   report: BiomarkerReport;
   history?: BiomarkerRecord[];
 }) {
+  const { i } = useLanguage();
   const statusColors = STATUS_COLORS[report.status];
   const breathingValues = history?.map(h => h.report.breathing_rate) ?? [];
   const energyValues = history?.map(h => h.report.energy) ?? [];
@@ -105,7 +101,7 @@ export function BiomarkerCard({
   return (
     <View style={styles.card}>
       <View style={styles.headerRow}>
-        <Text style={styles.title}>Voice Biomarkers</Text>
+        <Text style={styles.title}>{i.voiceBiomarkers}</Text>
         <View style={[styles.statusBadge, { backgroundColor: statusColors.bg }]}>
           <Text style={[styles.statusText, { color: statusColors.text }]}>
             {report.status.toUpperCase()}
@@ -114,60 +110,60 @@ export function BiomarkerCard({
       </View>
 
       {report.confidence !== undefined ? (
-        <ConfidenceBadge confidence={report.confidence} />
+        <ConfidenceBadge confidence={report.confidence} labels={{ high: i.highConfidence, moderate: i.moderateConfidence, low: i.lowConfidence, confidence: i.confidence }} />
       ) : null}
 
       <Text style={styles.summary}>{report.summary}</Text>
 
       <View style={styles.metricsGrid}>
         <Metric
-          label="Voice Energy"
+          label={i.voiceEnergy}
           value={`${report.energy}`}
           previousValue={prev?.energy}
-          explanation={METRIC_EXPLANATIONS["Voice Energy"]}
+          explanation={i.voiceEnergyExpl}
         />
         <Metric
-          label="Breathing Rate"
+          label={i.breathingRate}
           value={`${report.breathing_rate}/min`}
           previousValue={prev?.breathing_rate}
-          explanation={METRIC_EXPLANATIONS["Breathing Rate"]}
+          explanation={i.breathingRateExpl}
         />
         <Metric
-          label="Pitch Variability"
+          label={i.pitchVariability}
           value={`${report.pitch_variability}`}
           previousValue={prev?.pitch_variability}
-          explanation={METRIC_EXPLANATIONS["Pitch Variability"]}
+          explanation={i.pitchVariabilityExpl}
         />
         <Metric
-          label="Cough Events"
+          label={i.coughEvents}
           value={`${report.cough_events}`}
           previousValue={prev?.cough_events}
-          explanation={METRIC_EXPLANATIONS["Cough Events"]}
+          explanation={i.coughEventsExpl}
         />
       </View>
 
       {hasHistory ? (
         <View style={styles.trendSection}>
-          <Text style={styles.trendTitle}>Trends (last {Math.min(history!.length, 10)} readings)</Text>
+          <Text style={styles.trendTitle}>{tpl(i.trends, { count: Math.min(history!.length, 10) })}</Text>
 
           <View style={styles.trendRow}>
-            <Text style={styles.trendLabel}>Breathing</Text>
+            <Text style={styles.trendLabel}>{i.breathing}</Text>
             <TrendBar values={breathingValues} max={30} color="#3b82f6" />
           </View>
 
           <View style={styles.trendRow}>
-            <Text style={styles.trendLabel}>Energy</Text>
+            <Text style={styles.trendLabel}>{i.energy}</Text>
             <TrendBar values={energyValues} max={1} color="#22c55e" />
           </View>
 
           <View style={styles.trendRow}>
-            <Text style={styles.trendLabel}>Coughs</Text>
+            <Text style={styles.trendLabel}>{i.coughs}</Text>
             <TrendBar values={coughValues} max={10} color="#f59e0b" />
           </View>
 
           <View style={styles.trendTimeline}>
             <Text style={styles.trendTimeLabel}>{formatDate(history![Math.max(0, history!.length - 10)].timestamp)}</Text>
-            <Text style={styles.trendTimeLabel}>Now</Text>
+            <Text style={styles.trendTimeLabel}>{i.now}</Text>
           </View>
 
           {/* Alert count */}
@@ -177,13 +173,13 @@ export function BiomarkerCard({
             return (
               <View style={styles.trendSummaryRow}>
                 <View style={[styles.trendSummaryPill, { backgroundColor: "#fee2e2" }]}>
-                  <Text style={[styles.trendSummaryText, { color: "#991b1b" }]}>{alerts} alerts</Text>
+                  <Text style={[styles.trendSummaryText, { color: "#991b1b" }]}>{alerts} {i.alerts}</Text>
                 </View>
                 <View style={[styles.trendSummaryPill, { backgroundColor: "#fef3c7" }]}>
-                  <Text style={[styles.trendSummaryText, { color: "#92400e" }]}>{monitors} monitors</Text>
+                  <Text style={[styles.trendSummaryText, { color: "#92400e" }]}>{monitors} {i.monitors}</Text>
                 </View>
                 <View style={[styles.trendSummaryPill, { backgroundColor: "#dcfce7" }]}>
-                  <Text style={[styles.trendSummaryText, { color: "#166534" }]}>{history!.length - alerts - monitors} normal</Text>
+                  <Text style={[styles.trendSummaryText, { color: "#166534" }]}>{history!.length - alerts - monitors} {i.normal}</Text>
                 </View>
               </View>
             );

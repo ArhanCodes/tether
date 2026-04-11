@@ -19,6 +19,8 @@ import {
   getCachedUser,
   type UserAccount,
 } from "../lib/appData";
+import { LanguageProvider } from "../lib/LanguageContext";
+import { t } from "../lib/i18n";
 import { OnboardingScreen, ONBOARDING_KEY } from "../screens/OnboardingScreen";
 import { AuthScreen } from "../screens/AuthScreen";
 import { DoctorScreen } from "../screens/DoctorScreen";
@@ -80,6 +82,7 @@ export function AppNavigator() {
   const [isBooting, setIsBooting] = useState(true);
   const [initialRoute, setInitialRoute] = useState<keyof RootStackParamList>("Onboarding");
   const [initialUser, setInitialUser] = useState<UserAccount | null>(null);
+  const [userLanguage, setUserLanguage] = useState("English");
 
   useEffect(() => {
     let cancelled = false;
@@ -99,6 +102,7 @@ export function AppNavigator() {
           const cachedUser = await getCachedUser();
           if (cachedUser) {
             setInitialUser(cachedUser);
+            if (cachedUser.language) setUserLanguage(cachedUser.language);
             setInitialRoute(
               cachedUser.role === "doctor" ? "DoctorWorkspace" : "PatientCompanion",
             );
@@ -122,6 +126,8 @@ export function AppNavigator() {
     };
   }, []);
 
+  const i = t(userLanguage);
+
   if (isBooting) {
     return (
       <SafeAreaView style={styles.safeArea}>
@@ -129,13 +135,14 @@ export function AppNavigator() {
         <View style={styles.loadingWrap}>
           <Text style={styles.loadingBrand}>T</Text>
           <ActivityIndicator size="large" color="#3b82f6" />
-          <Text style={styles.loadingText}>Preparing your care companion...</Text>
+          <Text style={styles.loadingText}>{i.loadingText}</Text>
         </View>
       </SafeAreaView>
     );
   }
 
   return (
+    <LanguageProvider initialLanguage={userLanguage}>
     <NavigationContainer>
       <Stack.Navigator
         initialRouteName={initialRoute}
@@ -155,6 +162,7 @@ export function AppNavigator() {
         />
       </Stack.Navigator>
     </NavigationContainer>
+    </LanguageProvider>
   );
 }
 

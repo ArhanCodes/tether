@@ -16,6 +16,7 @@ import {
   type UserAccount,
   type UserRole,
 } from "../lib/appData";
+import { useLanguage } from "../lib/LanguageContext";
 import type { RootStackParamList } from "../navigation/AppNavigator";
 
 type AuthMode = "login" | "signup";
@@ -31,6 +32,7 @@ function isStrongPassword(value: string): boolean {
 }
 
 export function AuthScreen({ navigation }: Props) {
+  const { i } = useLanguage();
   const [authMode, setAuthMode] = useState<AuthMode>("login");
   const [authRole, setAuthRole] = useState<UserRole>("patient");
   const [fullName, setFullName] = useState("");
@@ -43,25 +45,19 @@ export function AuthScreen({ navigation }: Props) {
     const normalized = normalizeEmail(email);
 
     if (!fullName.trim() || fullName.trim().length < 2) {
-      Alert.alert("Invalid name", "Enter your full name.");
+      Alert.alert(i.invalidName, i.invalidNameMsg);
       return;
     }
     if (!isValidEmail(normalized)) {
-      Alert.alert("Invalid email", "Enter a valid email address.");
+      Alert.alert(i.invalidEmail, i.invalidEmailMsg);
       return;
     }
     if (!isStrongPassword(password.trim())) {
-      Alert.alert(
-        "Weak password",
-        "Use at least 8 characters and include at least one number.",
-      );
+      Alert.alert(i.weakPassword, i.weakPasswordMsg);
       return;
     }
     if (!acceptedTerms) {
-      Alert.alert(
-        "Consent required",
-        "You need to accept the Terms and Privacy notice before creating an account.",
-      );
+      Alert.alert(i.consentRequired, i.consentRequiredMsg);
       return;
     }
 
@@ -106,7 +102,7 @@ export function AuthScreen({ navigation }: Props) {
     const normalized = normalizeEmail(email);
 
     if (!isValidEmail(normalized) || !password.trim()) {
-      Alert.alert("Missing login details", "Enter a valid email and password.");
+      Alert.alert(i.missingLogin, i.missingLoginMsg);
       return;
     }
 
@@ -128,7 +124,7 @@ export function AuthScreen({ navigation }: Props) {
         ],
       });
     } catch (error: any) {
-      Alert.alert("Login failed", error.message || "Invalid email or password.");
+      Alert.alert(i.loginFailed, error.message || i.missingLoginMsg);
       console.error("Login error:", error);
     } finally {
       setIsSubmitting(false);
@@ -138,8 +134,8 @@ export function AuthScreen({ navigation }: Props) {
   return (
     <>
       <SectionCard
-        title={authMode === "login" ? "Log In" : "Create Account"}
-        subtitle="Choose your role during sign up. After login, Tether routes you to the correct home screen."
+        title={authMode === "login" ? i.logIn : i.createAccount}
+        subtitle={i.authSubtitle}
       >
         <View style={styles.roleTabs}>
           <Pressable
@@ -147,7 +143,7 @@ export function AuthScreen({ navigation }: Props) {
             style={[styles.roleButton, authMode === "login" && styles.roleButtonActive]}
           >
             <Text style={[styles.roleButtonText, authMode === "login" && styles.roleButtonTextActive]}>
-              Log In
+              {i.logIn}
             </Text>
           </Pressable>
           <Pressable
@@ -155,7 +151,7 @@ export function AuthScreen({ navigation }: Props) {
             style={[styles.roleButton, authMode === "signup" && styles.roleButtonActive]}
           >
             <Text style={[styles.roleButtonText, authMode === "signup" && styles.roleButtonTextActive]}>
-              Sign Up
+              {i.signUp}
             </Text>
           </Pressable>
         </View>
@@ -167,7 +163,7 @@ export function AuthScreen({ navigation }: Props) {
               style={[styles.roleButton, authRole === "doctor" && styles.roleButtonActive]}
             >
               <Text style={[styles.roleButtonText, authRole === "doctor" && styles.roleButtonTextActive]}>
-                Doctor
+                {i.doctor}
               </Text>
             </Pressable>
             <Pressable
@@ -175,7 +171,7 @@ export function AuthScreen({ navigation }: Props) {
               style={[styles.roleButton, authRole === "patient" && styles.roleButtonActive]}
             >
               <Text style={[styles.roleButtonText, authRole === "patient" && styles.roleButtonTextActive]}>
-                Patient
+                {i.patient}
               </Text>
             </Pressable>
           </View>
@@ -183,7 +179,7 @@ export function AuthScreen({ navigation }: Props) {
 
         {authMode === "signup" ? (
           <InputField
-            label="Full name"
+            label={i.fullName}
             value={fullName}
             onChangeText={setFullName}
             placeholder="Ava Thompson"
@@ -192,7 +188,7 @@ export function AuthScreen({ navigation }: Props) {
         ) : null}
 
         <InputField
-          label="Email"
+          label={i.email}
           value={email}
           onChangeText={setEmail}
           placeholder="you@example.com"
@@ -201,10 +197,10 @@ export function AuthScreen({ navigation }: Props) {
         />
 
         <InputField
-          label="Password"
+          label={i.password}
           value={password}
           onChangeText={setPassword}
-          placeholder="Password"
+          placeholder={i.password}
           secureTextEntry
           autoCapitalize="none"
         />
@@ -213,7 +209,7 @@ export function AuthScreen({ navigation }: Props) {
           <CheckboxRow
             checked={acceptedTerms}
             onPress={() => setAcceptedTerms((v) => !v)}
-            label="I agree to the Terms of Use and Privacy Notice, and I understand this app does not replace emergency care."
+            label={i.termsConsent}
           />
         ) : null}
 
@@ -224,18 +220,17 @@ export function AuthScreen({ navigation }: Props) {
         >
           <Text style={styles.primaryButtonText}>
             {isSubmitting
-              ? "Please wait..."
+              ? i.pleaseWait
               : authMode === "login"
-                ? "Log In"
-                : `Create ${authRole} account`}
+                ? i.logIn
+                : authRole === "doctor" ? i.createDoctorAccount : i.createPatientAccount}
           </Text>
         </Pressable>
 
         <View style={styles.infoCard}>
-          <Text style={styles.infoCardTitle}>Release-style onboarding</Text>
+          <Text style={styles.infoCardTitle}>{i.releaseOnboarding}</Text>
           <Text style={styles.infoCardText}>
-            Doctors and patients create separate accounts, and each user is
-            routed into the correct side of the app automatically after login.
+            {i.releaseOnboardingText}
           </Text>
         </View>
       </SectionCard>

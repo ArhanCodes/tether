@@ -2,46 +2,31 @@ import { useState } from "react";
 import { Pressable, Text, View, StyleSheet, Dimensions } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import type { NativeStackScreenProps } from "@react-navigation/native-stack";
+import { useLanguage } from "../lib/LanguageContext";
 import type { RootStackParamList } from "../navigation/AppNavigator";
 
 type Props = NativeStackScreenProps<RootStackParamList, "Onboarding">;
 
 const { width } = Dimensions.get("window");
 
-const STEPS = [
-  {
-    icon: "T",
-    title: "Welcome to Tether",
-    body: "Tether connects doctors and patients after hospital discharge. Your doctor publishes a personalized recovery plan, and you get AI-powered guidance anytime.",
-  },
-  {
-    icon: "D",
-    title: "For Doctors",
-    body: "Create detailed recovery plans with medications, daily instructions, red flags, and follow-up schedules. Publish them to specific patient accounts and respond to messages.",
-  },
-  {
-    icon: "P",
-    title: "For Patients",
-    body: "View your recovery plan, ask the AI questions by text or voice, and message your doctor when you need a human answer. Quick prompts help you get started.",
-  },
-  {
-    icon: "V",
-    title: "Voice Biomarkers",
-    body: "When you use voice chat, Tether analyzes your voice for health signals like breathing rate, cough patterns, and vocal tremor — all processed securely on the edge.",
-  },
-  {
-    icon: "!",
-    title: "Safety First",
-    body: "Tether helps explain your doctor's plan but never replaces emergency care. If symptoms feel severe or unsafe, seek immediate medical help — don't wait for chat responses.",
-  },
-];
+const STEP_ICONS = ["T", "D", "P", "V", "!"];
 
 export const ONBOARDING_KEY = "tether-onboarding-complete";
 
 export function OnboardingScreen({ navigation }: Props) {
+  const { i } = useLanguage();
   const [step, setStep] = useState(0);
-  const current = STEPS[step];
-  const isLast = step === STEPS.length - 1;
+
+  const steps = [
+    { icon: "T", title: i.welcomeTitle, body: i.welcomeBody },
+    { icon: "D", title: i.forDoctorsTitle, body: i.forDoctorsBody },
+    { icon: "P", title: i.forPatientsTitle, body: i.forPatientsBody },
+    { icon: "V", title: i.voiceBiomarkersTitle, body: i.voiceBiomarkersOnboardBody },
+    { icon: "!", title: i.safetyFirstTitle, body: i.safetyFirstBody },
+  ];
+
+  const current = steps[step];
+  const isLast = step === steps.length - 1;
 
   async function handleNext() {
     if (isLast) {
@@ -68,10 +53,10 @@ export function OnboardingScreen({ navigation }: Props) {
         <Text style={styles.body}>{current.body}</Text>
 
         <View style={styles.dots}>
-          {STEPS.map((_, i) => (
+          {steps.map((_, idx) => (
             <View
-              key={i}
-              style={[styles.dot, i === step && styles.dotActive]}
+              key={idx}
+              style={[styles.dot, idx === step && styles.dotActive]}
             />
           ))}
         </View>
@@ -80,14 +65,14 @@ export function OnboardingScreen({ navigation }: Props) {
       <View style={styles.footer}>
         {!isLast ? (
           <Pressable onPress={() => void handleSkip()} style={styles.skipButton}>
-            <Text style={styles.skipText}>Skip</Text>
+            <Text style={styles.skipText}>{i.skip}</Text>
           </Pressable>
         ) : (
           <View style={styles.skipButton} />
         )}
 
         <Pressable onPress={() => void handleNext()} style={styles.nextButton}>
-          <Text style={styles.nextText}>{isLast ? "Get Started" : "Next"}</Text>
+          <Text style={styles.nextText}>{isLast ? i.getStarted : i.next}</Text>
         </Pressable>
       </View>
     </View>
