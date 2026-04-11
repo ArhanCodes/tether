@@ -4,6 +4,7 @@ import type { NativeStackScreenProps } from "@react-navigation/native-stack";
 
 import { CheckboxRow } from "../components/CheckboxRow";
 import { InputField } from "../components/InputField";
+import { LanguageDropdown } from "../components/LanguageDropdown";
 import { SectionCard } from "../components/SectionCard";
 import {
   login,
@@ -133,17 +134,7 @@ export function AuthScreen({ navigation }: Props) {
 
   return (
     <>
-      <View style={styles.langRow}>
-        {SUPPORTED_LANGUAGES.map((lang) => (
-          <Pressable
-            key={lang}
-            style={[styles.langChip, language === lang && styles.langChipActive]}
-            onPress={() => setLanguage(lang)}
-          >
-            <Text style={[styles.langChipText, language === lang && styles.langChipTextActive]}>{lang}</Text>
-          </Pressable>
-        ))}
-      </View>
+      <LanguageDropdown current={language} onSelect={setLanguage} />
 
       <SectionCard
         title={authMode === "login" ? i.logIn : i.createAccount}

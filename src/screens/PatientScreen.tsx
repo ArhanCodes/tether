@@ -17,6 +17,7 @@ import {
 import type { NativeStackScreenProps } from "@react-navigation/native-stack";
 
 import { AnimatedButton } from "../components/AnimatedButton";
+import { LanguageDropdown } from "../components/LanguageDropdown";
 import { BiomarkerCard } from "../components/BiomarkerCard";
 import { MessageBubble, type ChatMessage } from "../components/MessageBubble";
 import { SectionCard } from "../components/SectionCard";
@@ -585,17 +586,7 @@ export function PatientScreen({ navigation, route }: Props) {
       </View>
 
       <SectionCard title={i.languageTitle} subtitle={i.languageSubtitle}>
-        <View style={styles.promptWrap}>
-          {SUPPORTED_LANGUAGES.map((lang) => (
-            <Pressable
-              key={lang}
-              style={[styles.promptChip, language === lang && styles.promptChipActive]}
-              onPress={() => void handleLanguageChange(lang)}
-            >
-              <Text style={[styles.promptChipText, language === lang && styles.promptChipTextActive]}>{lang}</Text>
-            </Pressable>
-          ))}
-        </View>
+        <LanguageDropdown current={language} onSelect={(lang) => void handleLanguageChange(lang)} />
       </SectionCard>
 
       {!activePlan ? (
