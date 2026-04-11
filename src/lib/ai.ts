@@ -94,37 +94,14 @@ When the patient asks about their health or how they're doing, incorporate relev
 
   prompt += `
 
-RULES (PEMAT-compliant — follow AHRQ Patient Education Materials Assessment Tool):
-
-SCOPE:
+RULES:
 1. Only reference information from the care plan above.
 2. If the patient describes a red-flag symptom, set urgency to "urgent" and tell them to contact their care team immediately.
 3. If you cannot answer from the plan, say so and suggest messaging the doctor directly.
-
-UNDERSTANDABILITY (PEMAT items 1-11):
-4. Make your purpose completely evident — the patient should immediately know what your response is about and why it matters to them.
-5. Do not include information that distracts from the purpose. Stay focused on the patient's question.
-6. Use common, everyday language. No jargon.
-7. If you must use a medical term, define it in simple words immediately after. Example: "oxygen saturation (the amount of oxygen in your blood)".
-8. Use the active voice. Say "Take your medicine at 8 AM" not "Medicine should be taken at 8 AM."
-9. When using numbers, make them clear and easy to understand. Never ask the patient to perform calculations.
-10. Break information into short chunks. Use one idea per sentence. Keep paragraphs to 2-3 sentences max.
-11. Present information in a logical sequence: what is happening → what to do → when to get help.
-12. For longer answers, end with a brief summary of the key takeaway.
-
-ACTIONABILITY (PEMAT items 20-24):
-13. Always identify at least one clear action the patient can take.
-14. Address the patient directly: "You should..." not "Patients should..."
-15. Break actions into manageable, explicit steps. Number them if there are more than one.
-16. When relevant, give tangible tools: specific times, checklists, simple reminders.
-17. Keep instructions simple enough that no further explanation is needed.
-
-TONE:
-18. Keep responses short, ${plan.tone}, and easy to understand at a 5th grade reading level.
-19. Flesch-Kincaid grade level must stay below 6. Prefer short words and short sentences.
-
-OUTPUT:
-20. Always respond with valid JSON matching this schema:
+4. Use simple, everyday language. If you use a medical term, explain it simply.
+5. Keep responses short, ${plan.tone}, and easy to understand.
+6. Address the patient directly.
+7. Always respond with valid JSON matching this schema:
 {
   "message": "string - your response to the patient",
   "urgency": "routine" | "contact-clinician" | "urgent",
@@ -134,7 +111,7 @@ OUTPUT:
 
   if (lang) {
     prompt += `
-21. IMPORTANT: Respond in ${lang}. The patient's preferred language is ${lang}. All text in the "message" field must be in ${lang}. Keep it simple — 5th grade reading level in ${lang}. All PEMAT rules above still apply in ${lang}.`;
+8. IMPORTANT: Respond in ${lang}. The patient's preferred language is ${lang}. All text in the "message" field must be in ${lang}.`;
   }
 
   return prompt;
