@@ -1,4 +1,5 @@
-import { Pressable, ScrollView, Text, View, StyleSheet } from "react-native";
+import { useState } from "react";
+import { Pressable, Text, View, StyleSheet } from "react-native";
 
 export type NavItem = {
   key: string;
@@ -12,49 +13,75 @@ export function SectionNav({
   items: NavItem[];
   onPress: (key: string) => void;
 }) {
+  const [open, setOpen] = useState(false);
+
+  if (items.length === 0) return null;
+
   return (
-    <View style={styles.container}>
-      <ScrollView
-        horizontal
-        showsHorizontalScrollIndicator={false}
-        contentContainerStyle={styles.scroll}
+    <View style={styles.wrapper}>
+      <Pressable
+        style={styles.hamburger}
+        onPress={() => setOpen((v) => !v)}
+        accessibilityLabel="Navigation menu"
+        accessibilityRole="button"
       >
-        {items.map((item) => (
-          <Pressable
-            key={item.key}
-            style={styles.chip}
-            onPress={() => onPress(item.key)}
-          >
-            <Text style={styles.chipText}>{item.label}</Text>
-          </Pressable>
-        ))}
-      </ScrollView>
+        <Text style={styles.hamburgerIcon}>{open ? "✕" : "☰"}</Text>
+      </Pressable>
+
+      {open ? (
+        <View style={styles.menu}>
+          {items.map((item) => (
+            <Pressable
+              key={item.key}
+              style={styles.menuItem}
+              onPress={() => {
+                setOpen(false);
+                onPress(item.key);
+              }}
+            >
+              <Text style={styles.menuItemText}>{item.label}</Text>
+            </Pressable>
+          ))}
+        </View>
+      ) : null}
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
+  wrapper: {
+    zIndex: 100,
+  },
+  hamburger: {
+    alignSelf: "flex-start",
+    backgroundColor: "#ffffff",
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: "#e2e8f0",
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+  },
+  hamburgerIcon: {
+    fontSize: 20,
+    color: "#1d4ed8",
+    fontWeight: "700",
+  },
+  menu: {
+    marginTop: 8,
     backgroundColor: "#ffffff",
     borderRadius: 20,
     borderWidth: 1,
     borderColor: "#e2e8f0",
-    paddingVertical: 10,
-    paddingHorizontal: 6,
+    paddingVertical: 6,
+    overflow: "hidden",
   },
-  scroll: {
-    gap: 8,
-    paddingHorizontal: 8,
+  menuItem: {
+    paddingHorizontal: 20,
+    paddingVertical: 14,
   },
-  chip: {
-    paddingHorizontal: 14,
-    paddingVertical: 8,
-    borderRadius: 999,
-    backgroundColor: "#eff6ff",
-  },
-  chipText: {
+  menuItemText: {
     color: "#1d4ed8",
-    fontSize: 13,
+    fontSize: 15,
     fontWeight: "700",
   },
 });
