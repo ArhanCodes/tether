@@ -3,7 +3,7 @@ import { Pressable, Text, View, StyleSheet, Dimensions } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import type { NativeStackScreenProps } from "@react-navigation/native-stack";
 import { useLanguage } from "../lib/LanguageContext";
-import type { RootStackParamList } from "../navigation/AppNavigator";
+import type { RootStackParamList } from "../lib/navigationTypes";
 
 type Props = NativeStackScreenProps<RootStackParamList, "Onboarding">;
 

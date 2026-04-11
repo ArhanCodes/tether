@@ -54,7 +54,9 @@ import {
 } from "../lib/biomarker";
 import { useLanguage, SUPPORTED_LANGUAGES, type Language } from "../lib/LanguageContext";
 import { tpl } from "../lib/i18n";
-import type { RootStackParamList } from "../navigation/AppNavigator";
+import { SectionNav, type NavItem } from "../components/SectionNav";
+import type { RootStackParamList } from "../lib/navigationTypes";
+import { useScreenScroll } from "../lib/ScrollContext";
 
 type Props = NativeStackScreenProps<RootStackParamList, "PatientCompanion">;
 
@@ -155,6 +157,27 @@ export function PatientScreen({ navigation, route }: Props) {
   const [journalEntries, setJournalEntries] = useState<JournalEntry[]>([]);
   const [journalInput, setJournalInput] = useState("");
   const [adherenceRecords, setAdherenceRecords] = useState<AdherenceRecord[]>([]);
+  const sectionPositions = useRef<Record<string, number>>({});
+  const { scrollTo } = useScreenScroll();
+
+  const navItems: NavItem[] = useMemo(() => [
+    { key: "plan", label: i.navPlan },
+    { key: "ai", label: i.navAI },
+    { key: "voice", label: i.navVoice },
+    { key: "journal", label: i.navJournal },
+    { key: "meds", label: i.navMeds },
+    { key: "doctor", label: i.navDoctor },
+    { key: "account", label: i.navAccount },
+  ], [i]);
+
+  function registerSection(key: string, y: number) {
+    sectionPositions.current[key] = y;
+  }
+
+  function scrollToSection(key: string) {
+    const y = sectionPositions.current[key];
+    if (y !== undefined) scrollTo(y);
+  }
 
   useEffect(() => {
     void (async () => {
@@ -545,6 +568,8 @@ export function PatientScreen({ navigation, route }: Props) {
 
   return (
     <>
+      <SectionNav items={activePlan ? navItems : []} onPress={scrollToSection} />
+
       <View style={styles.heroCard}>
         <Text style={styles.kicker}>{i.patientCompanion}</Text>
         <Text style={styles.heroTitle}>{user.name}</Text>
@@ -584,6 +609,7 @@ export function PatientScreen({ navigation, route }: Props) {
         </SectionCard>
       ) : (
         <>
+          <View onLayout={(e) => registerSection("plan", e.nativeEvent.layout.y)}>
           <SectionCard
             title={`${activePlan.patientName} — ${i.recoveryPlan}`}
             subtitle={`${i.publishedBy} ${activePlan.doctorName} · ${formatTimestamp(activePlan.lastUpdatedAt)}`}
@@ -615,7 +641,9 @@ export function PatientScreen({ navigation, route }: Props) {
               ))}
             </View>
           </SectionCard>
+          </View>
 
+          <View onLayout={(e) => registerSection("ai", e.nativeEvent.layout.y)}>
           <SectionCard title={i.askTetherAI} subtitle={i.askAISubtitle}>
             <View style={styles.voiceStatusRow}>
               <View style={[styles.statusDot, voiceSupported ? styles.statusGood : styles.statusMuted]} />
@@ -689,7 +717,9 @@ export function PatientScreen({ navigation, route }: Props) {
               />
             </View>
           </SectionCard>
+          </View>
 
+          <View onLayout={(e) => registerSection("voice", e.nativeEvent.layout.y)}>
           <SectionCard
             title={i.voiceBiomarkers}
             subtitle={i.biomarkerSubtitle}
@@ -741,7 +771,9 @@ export function PatientScreen({ navigation, route }: Props) {
             ) : null}
             {biomarkerReport ? <BiomarkerCard report={biomarkerReport} history={biomarkerHistory} /> : null}
           </SectionCard>
+          </View>
 
+          <View onLayout={(e) => registerSection("journal", e.nativeEvent.layout.y)}>
           <SectionCard title={i.journalTitle} subtitle={i.journalSubtitle}>
             {activePlan.dischargeDate ? (
               <View style={styles.dischargeBadge}>
@@ -785,7 +817,9 @@ export function PatientScreen({ navigation, route }: Props) {
               </ScrollView>
             )}
           </SectionCard>
+          </View>
 
+          <View onLayout={(e) => registerSection("meds", e.nativeEvent.layout.y)}>
           <SectionCard title={i.medicationAdherence} subtitle={i.adherenceSubtitle}>
             <Text style={styles.adherenceQuestion}>{i.didYouTakeMeds}</Text>
             <View style={styles.buttonRow}>
@@ -817,7 +851,9 @@ export function PatientScreen({ navigation, route }: Props) {
               </View>
             ) : null}
           </SectionCard>
+          </View>
 
+          <View onLayout={(e) => registerSection("doctor", e.nativeEvent.layout.y)}>
           <SectionCard
             title={tpl(i.messageDoctorTitle, { name: activePlan.doctorName })}
             subtitle={i.messageDoctorSubtitle}
@@ -888,7 +924,9 @@ export function PatientScreen({ navigation, route }: Props) {
               accessibilityLabel={i.messageDoctor}
             />
           </SectionCard>
+          </View>
 
+          <View onLayout={(e) => registerSection("account", e.nativeEvent.layout.y)}>
           <SectionCard title={i.accountSafety} subtitle={i.accountSafetySubtitle}>
             <View style={styles.previewGrid}>
               <SummaryPill label={i.role} value={i.patient} />
@@ -898,6 +936,15 @@ export function PatientScreen({ navigation, route }: Props) {
               {i.safetyDisclaimer}
             </Text>
           </SectionCard>
+          </View>
+
+          <Pressable
+            style={styles.floatingAIButton}
+            onPress={() => scrollToSection("ai")}
+            accessibilityLabel={i.talkToAI}
+          >
+            <Text style={styles.floatingAIButtonText}>{i.talkToAI}</Text>
+          </Pressable>
         </>
       )}
     </>
@@ -1174,5 +1221,24 @@ const styles = StyleSheet.create({
   },
   adherenceMissed: {
     backgroundColor: "#ef4444",
+  },
+  floatingAIButton: {
+    backgroundColor: "#1d4ed8",
+    borderRadius: 999,
+    paddingVertical: 14,
+    paddingHorizontal: 24,
+    alignItems: "center",
+    justifyContent: "center",
+    alignSelf: "center",
+    shadowColor: "#1d4ed8",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 6,
+  },
+  floatingAIButtonText: {
+    color: "#ffffff",
+    fontSize: 15,
+    fontWeight: "800",
   },
 });

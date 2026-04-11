@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   ActivityIndicator,
   KeyboardAvoidingView,
@@ -9,6 +9,9 @@ import {
   Text,
   View,
 } from "react-native";
+
+import { ScrollCtx, type ScrollContextValue } from "../lib/ScrollContext";
+export { useScreenScroll } from "../lib/ScrollContext";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { NavigationContainer } from "@react-navigation/native";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
@@ -21,35 +24,39 @@ import {
 } from "../lib/appData";
 import { LanguageProvider } from "../lib/LanguageContext";
 import { t } from "../lib/i18n";
+import type { RootStackParamList } from "../lib/navigationTypes";
 import { OnboardingScreen, ONBOARDING_KEY } from "../screens/OnboardingScreen";
 import { AuthScreen } from "../screens/AuthScreen";
 import { DoctorScreen } from "../screens/DoctorScreen";
 import { PatientScreen } from "../screens/PatientScreen";
 
-export type RootStackParamList = {
-  Onboarding: undefined;
-  Auth: undefined;
-  DoctorWorkspace: { user: UserAccount };
-  PatientCompanion: { user: UserAccount };
-};
+export type { RootStackParamList } from "../lib/navigationTypes";
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
 
-function ScreenWrapper({ children }: { children: React.ReactNode }) {
+function ScreenWrapper({ children, stickyFirst }: { children: React.ReactNode; stickyFirst?: boolean }) {
+  const scrollRef = useRef<ScrollView>(null);
+  const ctxValue: ScrollContextValue = {
+    scrollTo: (y: number) => scrollRef.current?.scrollTo({ y, animated: true }),
+  };
   return (
     <SafeAreaView style={styles.safeArea}>
       <StatusBar style="dark" />
-      <KeyboardAvoidingView
-        behavior={Platform.OS === "ios" ? "padding" : undefined}
-        style={styles.keyboard}
-      >
-        <ScrollView
-          contentContainerStyle={styles.scrollContent}
-          showsVerticalScrollIndicator={false}
+      <ScrollCtx.Provider value={ctxValue}>
+        <KeyboardAvoidingView
+          behavior={Platform.OS === "ios" ? "padding" : undefined}
+          style={styles.keyboard}
         >
-          {children}
-        </ScrollView>
-      </KeyboardAvoidingView>
+          <ScrollView
+            ref={scrollRef}
+            contentContainerStyle={styles.scrollContent}
+            showsVerticalScrollIndicator={false}
+            stickyHeaderIndices={stickyFirst ? [0] : undefined}
+          >
+            {children}
+          </ScrollView>
+        </KeyboardAvoidingView>
+      </ScrollCtx.Provider>
     </SafeAreaView>
   );
 }
@@ -64,7 +71,7 @@ function AuthWrapper(props: { navigation: any; route: any }) {
 
 function DoctorWrapper(props: { navigation: any; route: any }) {
   return (
-    <ScreenWrapper>
+    <ScreenWrapper stickyFirst>
       <DoctorScreen {...props} />
     </ScreenWrapper>
   );
@@ -72,7 +79,7 @@ function DoctorWrapper(props: { navigation: any; route: any }) {
 
 function PatientWrapper(props: { navigation: any; route: any }) {
   return (
-    <ScreenWrapper>
+    <ScreenWrapper stickyFirst>
       <PatientScreen {...props} />
     </ScreenWrapper>
   );

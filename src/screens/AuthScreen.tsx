@@ -17,7 +17,7 @@ import {
   type UserRole,
 } from "../lib/appData";
 import { useLanguage, SUPPORTED_LANGUAGES, type Language } from "../lib/LanguageContext";
-import type { RootStackParamList } from "../navigation/AppNavigator";
+import type { RootStackParamList } from "../lib/navigationTypes";
 
 type AuthMode = "login" | "signup";
 

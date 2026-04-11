@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
   Alert,
   Pressable,
@@ -33,7 +33,9 @@ import {
 import { demoDoctorPlan, summarizePlan, type DoctorPlan } from "../lib/showcase";
 import { useLanguage } from "../lib/LanguageContext";
 import { tpl } from "../lib/i18n";
-import type { RootStackParamList } from "../navigation/AppNavigator";
+import { SectionNav, type NavItem } from "../components/SectionNav";
+import type { RootStackParamList } from "../lib/navigationTypes";
+import { useScreenScroll } from "../lib/ScrollContext";
 
 type Tone = DoctorPlan["tone"];
 type Props = NativeStackScreenProps<RootStackParamList, "DoctorWorkspace">;
@@ -79,6 +81,25 @@ export function DoctorScreen({ navigation, route }: Props) {
   const [doctorThreadPatientEmail, setDoctorThreadPatientEmail] = useState("");
   const [doctorReplyInput, setDoctorReplyInput] = useState("");
   const [recoveryScores, setRecoveryScores] = useState<RecoveryScoreResult[]>([]);
+  const sectionPositions = useRef<Record<string, number>>({});
+  const { scrollTo } = useScreenScroll();
+
+  const navItems: NavItem[] = useMemo(() => [
+    { key: "publish", label: i.navPublish },
+    { key: "preview", label: i.navPreview },
+    { key: "scores", label: i.navScores },
+    { key: "account", label: i.navAccount },
+    { key: "messages", label: i.navMessages },
+  ], [i]);
+
+  function registerSection(key: string, y: number) {
+    sectionPositions.current[key] = y;
+  }
+
+  function scrollToSection(key: string) {
+    const y = sectionPositions.current[key];
+    if (y !== undefined) scrollTo(y);
+  }
 
   useEffect(() => {
     void (async () => {
@@ -257,6 +278,8 @@ export function DoctorScreen({ navigation, route }: Props) {
 
   return (
     <>
+      <SectionNav items={navItems} onPress={scrollToSection} />
+
       <View style={styles.heroCard}>
         <Text style={styles.kicker}>{i.doctorWorkspace}</Text>
         <Text style={styles.heroTitle}>{user.name}</Text>
@@ -272,6 +295,7 @@ export function DoctorScreen({ navigation, route }: Props) {
         </View>
       </View>
 
+      <View onLayout={(e) => registerSection("publish", e.nativeEvent.layout.y)}>
       <SectionCard title={i.publishPatientPlan} subtitle={i.doctorOnlySubtitle}>
         <View style={styles.buttonRow}>
           <AnimatedButton label={i.publishPlan} variant="primary" onPress={() => void publishPlan()} accessibilityLabel={i.publishPlan} />
@@ -326,7 +350,9 @@ export function DoctorScreen({ navigation, route }: Props) {
           </View>
         </View>
       </SectionCard>
+      </View>
 
+      <View onLayout={(e) => registerSection("preview", e.nativeEvent.layout.y)}>
       <SectionCard title={i.publishedPreview} subtitle={i.publishedPreviewSubtitle}>
         <Text style={styles.previewText}>{summarizePlan(draftPlan)}</Text>
         <View style={styles.previewGrid}>
@@ -336,7 +362,9 @@ export function DoctorScreen({ navigation, route }: Props) {
           <SummaryPill label={i.updated} value={formatTimestamp(draftPlan.lastUpdatedAt)} />
         </View>
       </SectionCard>
+      </View>
 
+      <View onLayout={(e) => registerSection("scores", e.nativeEvent.layout.y)}>
       <SectionCard title={i.recoveryScores} subtitle={i.recoveryScoresSubtitle}>
         {recoveryScores.length === 0 ? (
           <Text style={styles.previewText}>{i.noScoresYet}</Text>
@@ -368,7 +396,9 @@ export function DoctorScreen({ navigation, route }: Props) {
           })
         )}
       </SectionCard>
+      </View>
 
+      <View onLayout={(e) => registerSection("account", e.nativeEvent.layout.y)}>
       <SectionCard title={i.accountSafetyDoctor} subtitle={i.accountSafetyDoctorSubtitle}>
         <View style={styles.previewGrid}>
           <SummaryPill label={i.role} value={i.doctor} />
@@ -378,7 +408,9 @@ export function DoctorScreen({ navigation, route }: Props) {
           {i.doctorSafetyText}
         </Text>
       </SectionCard>
+      </View>
 
+      <View onLayout={(e) => registerSection("messages", e.nativeEvent.layout.y)}>
       <SectionCard title={i.patientMessages} subtitle={i.patientMessagesSubtitle}>
         {doctorThreadOptions.length > 0 ? (
           <>
@@ -444,6 +476,7 @@ export function DoctorScreen({ navigation, route }: Props) {
           </Text>
         )}
       </SectionCard>
+      </View>
     </>
   );
 }

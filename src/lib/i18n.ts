@@ -260,6 +260,20 @@ type TranslationKeys = {
   // Discharge date
   dischargeDate: string;
   daysSinceDischarge: string;
+
+  // Section nav (short labels)
+  navPlan: string;
+  navAI: string;
+  navVoice: string;
+  navJournal: string;
+  navMeds: string;
+  navDoctor: string;
+  navAccount: string;
+  navPublish: string;
+  navPreview: string;
+  navScores: string;
+  navMessages: string;
+  talkToAI: string;
 };
 
 const en: TranslationKeys = {
@@ -472,6 +486,18 @@ const en: TranslationKeys = {
   noScoresYet: "No recovery scores available yet. Scores appear after patients start using the app.",
   dischargeDate: "Discharge date",
   daysSinceDischarge: "Day {days} since discharge",
+  navPlan: "Plan",
+  navAI: "AI Chat",
+  navVoice: "Voice",
+  navJournal: "Journal",
+  navMeds: "Meds",
+  navDoctor: "Doctor",
+  navAccount: "Account",
+  navPublish: "Publish",
+  navPreview: "Preview",
+  navScores: "Scores",
+  navMessages: "Messages",
+  talkToAI: "Talk to AI",
 };
 
 const es: TranslationKeys = {
@@ -684,6 +710,18 @@ const es: TranslationKeys = {
   noScoresYet: "No hay puntajes disponibles aún. Aparecen cuando los pacientes empiezan a usar la app.",
   dischargeDate: "Fecha de alta",
   daysSinceDischarge: "Día {days} desde el alta",
+  navPlan: "Plan",
+  navAI: "Chat IA",
+  navVoice: "Voz",
+  navJournal: "Diario",
+  navMeds: "Medicinas",
+  navDoctor: "Doctor",
+  navAccount: "Cuenta",
+  navPublish: "Publicar",
+  navPreview: "Vista previa",
+  navScores: "Puntajes",
+  navMessages: "Mensajes",
+  talkToAI: "Hablar con IA",
 };
 
 const hi: TranslationKeys = {
@@ -896,6 +934,18 @@ const hi: TranslationKeys = {
   noScoresYet: "अभी कोई स्कोर उपलब्ध नहीं। मरीज़ ऐप का उपयोग शुरू करने पर स्कोर दिखाई देंगे।",
   dischargeDate: "छुट्टी की तारीख",
   daysSinceDischarge: "छुट्टी के बाद दिन {days}",
+  navPlan: "प्लान",
+  navAI: "AI चैट",
+  navVoice: "आवाज़",
+  navJournal: "डायरी",
+  navMeds: "दवाएं",
+  navDoctor: "डॉक्टर",
+  navAccount: "खाता",
+  navPublish: "प्रकाशित",
+  navPreview: "पूर्वावलोकन",
+  navScores: "स्कोर",
+  navMessages: "संदेश",
+  talkToAI: "AI से बात करें",
 };
 
 const zh: TranslationKeys = {
@@ -1108,6 +1158,18 @@ const zh: TranslationKeys = {
   noScoresYet: "暂无康复评分。患者开始使用应用后将显示评分。",
   dischargeDate: "出院日期",
   daysSinceDischarge: "出院第 {days} 天",
+  navPlan: "计划",
+  navAI: "AI聊天",
+  navVoice: "语音",
+  navJournal: "日记",
+  navMeds: "药物",
+  navDoctor: "医生",
+  navAccount: "账户",
+  navPublish: "发布",
+  navPreview: "预览",
+  navScores: "评分",
+  navMessages: "消息",
+  talkToAI: "与AI对话",
 };
 
 const fr: TranslationKeys = {
@@ -1320,6 +1382,18 @@ const fr: TranslationKeys = {
   noScoresYet: "Pas encore de scores. Les scores apparaissent quand les patients commencent à utiliser l'application.",
   dischargeDate: "Date de sortie",
   daysSinceDischarge: "Jour {days} depuis la sortie",
+  navPlan: "Plan",
+  navAI: "Chat IA",
+  navVoice: "Voix",
+  navJournal: "Journal",
+  navMeds: "Médicaments",
+  navDoctor: "Médecin",
+  navAccount: "Compte",
+  navPublish: "Publier",
+  navPreview: "Aperçu",
+  navScores: "Scores",
+  navMessages: "Messages",
+  talkToAI: "Parler à l'IA",
 };
 
 const ar: TranslationKeys = {
@@ -1532,6 +1606,18 @@ const ar: TranslationKeys = {
   noScoresYet: "لا توجد درجات تعافي حتى الآن. تظهر الدرجات عندما يبدأ المرضى باستخدام التطبيق.",
   dischargeDate: "تاريخ الخروج",
   daysSinceDischarge: "اليوم {days} منذ الخروج",
+  navPlan: "الخطة",
+  navAI: "محادثة AI",
+  navVoice: "الصوت",
+  navJournal: "اليوميات",
+  navMeds: "الأدوية",
+  navDoctor: "الطبيب",
+  navAccount: "الحساب",
+  navPublish: "نشر",
+  navPreview: "معاينة",
+  navScores: "الدرجات",
+  navMessages: "الرسائل",
+  talkToAI: "تحدث مع AI",
 };
 
 const translations: Record<Language, TranslationKeys> = {
