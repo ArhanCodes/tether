@@ -17,6 +17,7 @@ export type DoctorPlan = {
   doctorNotes: string;
   tone: "calm" | "direct" | "reassuring";
   lastUpdatedAt: string;
+  dischargeDate?: string;
 };
 
 export type AssistantUrgency = "routine" | "contact-clinician" | "urgent";
@@ -81,6 +82,7 @@ export const demoDoctorPlan: DoctorPlan = {
     "Explain everything in simple language. Patient becomes anxious when overwhelmed, so keep advice short, calm, and step-based.",
   tone: "reassuring",
   lastUpdatedAt: new Date().toISOString(),
+  dischargeDate: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString().split("T")[0],
 };
 
 function normalize(text: string): string {

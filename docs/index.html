@@ -346,6 +346,10 @@
         <a href="#biomarker">Voice Biomarkers</a>
         <a href="#engine-connection">Engine Connection</a>
         <a href="#readability">Readability Scoring</a>
+        <a href="#journal">Patient Journal</a>
+        <a href="#adherence">Medication Adherence</a>
+        <a href="#time-aware">Time-aware Prompting</a>
+        <a href="#recovery-score">Recovery Score</a>
         <a href="#multilingual">Multilingual</a>
         <a href="#onboarding">Onboarding</a>
 
@@ -649,6 +653,15 @@ npx wrangler deploy</code></pre>
           <li>Biomarker status levels (normal / monitor / alert) with alert popup</li>
           <li><strong>Biomarker trending</strong> — historical chart showing trends over time</li>
           <li><strong>Engine connection</strong> — biomarker data injected into AI context automatically</li>
+          <li><strong>Patient Journal</strong> — daily journal entries that feed into AI context for more personalized responses</li>
+          <li><strong>Medication Adherence Tracker</strong> — daily yes/no medication logging with 7-day streak visualization</li>
+          <li><strong>Time-aware prompting</strong> — AI adapts advice based on days since discharge (early/mid/extended recovery)</li>
+        </ul>
+
+        <h3>Doctor Workspace (continued)</h3>
+        <ul>
+          <li><strong>Discharge date</strong> — set per patient to enable time-aware recovery guidance</li>
+          <li><strong>Recovery Score Dashboard</strong> — composite 0-100 score per patient (biomarker + adherence + engagement + journal), sorted by risk</li>
         </ul>
 
         <h3>Onboarding</h3>
@@ -730,6 +743,14 @@ npx wrangler deploy</code></pre>
           <div class="card">
             <h4>Doctor Messaging</h4>
             <p>Direct messaging channel for when AI isn't enough. The AI can auto-suggest using this when it lacks certainty.</p>
+          </div>
+          <div class="card">
+            <h4>Patient Journal</h4>
+            <p>Write daily entries about how you feel. Recent entries are injected into the AI prompt so responses reflect your current emotional and physical state.</p>
+          </div>
+          <div class="card">
+            <h4>Medication Tracker</h4>
+            <p>Log daily medication adherence with a simple yes/no. A 7-day streak visualization shows your compliance at a glance.</p>
           </div>
         </div>
       </section>
@@ -826,6 +847,62 @@ npx wrangler deploy</code></pre>
         </ul>
       </section>
 
+      <!-- Patient Journal -->
+      <section id="journal">
+        <h2>Patient Journal</h2>
+        <p>Patients can write daily journal entries describing how they feel. This serves two purposes:</p>
+        <ul>
+          <li><strong>Patient self-reflection:</strong> Writing about symptoms, mood, and progress helps patients track their own recovery</li>
+          <li><strong>AI context enrichment:</strong> The 3 most recent journal entries are injected into the AI system prompt, allowing responses to account for the patient's current emotional and physical state</li>
+        </ul>
+        <p>Entries are stored server-side via Durable Objects (max 100 per patient, 2000 character limit). The patient sees their entries in reverse chronological order. The journal also contributes to the Recovery Score (up to 20 points).</p>
+      </section>
+
+      <!-- Medication Adherence -->
+      <section id="adherence">
+        <h2>Medication Adherence Tracker</h2>
+        <p>A simple daily check-in that asks patients: "Did you take all your medicines today?" with Yes/No buttons.</p>
+        <ul>
+          <li><strong>One log per day:</strong> Duplicate entries for the same day are prevented</li>
+          <li><strong>7-day streak:</strong> Colored dots show recent adherence (green = taken, red = missed)</li>
+          <li><strong>AI awareness:</strong> Adherence records are injected into the AI prompt — if the patient has missed 2+ days, the AI gently reminds them about medication importance</li>
+          <li><strong>Recovery Score input:</strong> Adherence contributes up to 30 points to the composite score</li>
+        </ul>
+      </section>
+
+      <!-- Time-aware Prompting -->
+      <section id="time-aware">
+        <h2>Time-aware Prompting</h2>
+        <p>Doctors can set a discharge date on each patient's plan. The AI system prompt then calculates days since discharge and adjusts its approach:</p>
+        <table>
+          <tr><th>Phase</th><th>Days</th><th>AI Behavior</th></tr>
+          <tr><td>Early recovery</td><td>0-3</td><td>Extra cautious, encourages rest and monitoring</td></tr>
+          <tr><td>Mid recovery</td><td>4-14</td><td>Encourages gradual activity and adherence</td></tr>
+          <tr><td>Extended recovery</td><td>15+</td><td>Focuses on long-term habits and follow-up</td></tr>
+        </table>
+        <p>A "Day X since discharge" badge appears on the patient's journal section for awareness.</p>
+      </section>
+
+      <!-- Recovery Score -->
+      <section id="recovery-score">
+        <h2>Recovery Score</h2>
+        <p>A composite 0-100 score calculated per patient, visible to doctors on their workspace. Patients are sorted lowest-first so the most at-risk patients get attention first.</p>
+        <h3>Scoring Breakdown</h3>
+        <table>
+          <tr><th>Component</th><th>Max Points</th><th>Source</th></tr>
+          <tr><td>Biomarker Health</td><td>30</td><td>Ratio of normal/monitor/alert readings in recent biomarker history</td></tr>
+          <tr><td>Medication Adherence</td><td>30</td><td>Proportion of "taken" days in the last 7 days</td></tr>
+          <tr><td>Communication Engagement</td><td>20</td><td>Patient messages sent in the last 7 days (capped at 4)</td></tr>
+          <tr><td>Journal Activity</td><td>20</td><td>Journal entries written in the last 7 days (capped at 4)</td></tr>
+        </table>
+        <h3>Risk Levels</h3>
+        <ul>
+          <li><span class="badge badge-red">0-39: At Risk</span> — needs immediate attention</li>
+          <li><span class="badge badge-amber">40-69: Recovering</span> — progressing but needs monitoring</li>
+          <li><span class="badge badge-green">70-100: On Track</span> — recovery going well</li>
+        </ul>
+      </section>
+
       <!-- Multilingual -->
       <section id="multilingual">
         <h2>Multilingual Support</h2>
@@ -854,6 +931,9 @@ npx wrangler deploy</code></pre>
           <tr><td><code>/api/biomarkers</code></td><td>GET/POST</td><td>Store and retrieve biomarker history</td></tr>
           <tr><td><code>/api/user/language</code></td><td>POST</td><td>Update patient language preference</td></tr>
           <tr><td><code>/api/users</code></td><td>GET</td><td>List users (password hashes excluded)</td></tr>
+          <tr><td><code>/api/journal</code></td><td>GET/POST</td><td>Patient journal entries (max 100 per patient, 2000 char limit)</td></tr>
+          <tr><td><code>/api/adherence</code></td><td>GET/POST</td><td>Daily medication adherence records (upserts by patient+date)</td></tr>
+          <tr><td><code>/api/recovery-score</code></td><td>GET</td><td>Composite recovery scores for a doctor's patients, sorted by risk</td></tr>
         </table>
       </section>
 

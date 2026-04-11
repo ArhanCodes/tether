@@ -47,6 +47,7 @@ interface DoctorPlan {
   doctorNotes: string;
   tone: "calm" | "direct" | "reassuring";
   lastUpdatedAt: string;
+  dischargeDate?: string;
 }
 
 interface CareMessage {
@@ -75,11 +76,28 @@ interface BiomarkerRecord {
   timestamp: string;
 }
 
+interface JournalEntry {
+  id: string;
+  patientEmail: string;
+  text: string;
+  createdAt: string;
+}
+
+interface AdherenceRecord {
+  id: string;
+  patientEmail: string;
+  date: string;       // YYYY-MM-DD
+  taken: boolean;
+  createdAt: string;
+}
+
 interface TetherState {
   users: UserAccount[];
   plans: DoctorPlan[];
   messages: CareMessage[];
   biomarkers: BiomarkerRecord[];
+  journal: JournalEntry[];
+  adherence: AdherenceRecord[];
 }
 
 // ── Helpers ──────────────────────────────────────────────────────────
@@ -127,6 +145,8 @@ export class TetherData {
         if (!u.language) u.language = "English";
       }
       if (!stored.biomarkers) stored.biomarkers = [];
+      if (!stored.journal) stored.journal = [];
+      if (!stored.adherence) stored.adherence = [];
       this.data = stored;
       return stored;
     }
@@ -159,9 +179,12 @@ export class TetherData {
         followUp: "Nurse check-in tomorrow morning and GP follow-up appointment in 3 days.",
         doctorNotes: "Explain everything in simple language. Patient becomes anxious when overwhelmed, so keep advice short, calm, and step-based.",
         tone: "reassuring", lastUpdatedAt: new Date().toISOString(),
+        dischargeDate: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString().split("T")[0],
       }],
       messages: [],
       biomarkers: [],
+      journal: [],
+      adherence: [],
     };
     this.data = seed;
     await this.save();
@@ -182,6 +205,9 @@ export class TetherData {
         if (path === "/api/messages") return this.getMessages(url);
         if (path === "/api/biomarkers") return this.getBiomarkers(url);
         if (path === "/api/users") return this.getUsers(url);
+        if (path === "/api/journal") return this.getJournal(url);
+        if (path === "/api/adherence") return this.getAdherence(url);
+        if (path === "/api/recovery-score") return this.getRecoveryScore(url);
       }
       if (request.method === "POST") {
         if (path === "/api/signup") return this.signup(request);
@@ -190,6 +216,8 @@ export class TetherData {
         if (path === "/api/messages") return this.addMessage(request);
         if (path === "/api/biomarkers") return this.addBiomarker(request);
         if (path === "/api/user/language") return this.setLanguage(request);
+        if (path === "/api/journal") return this.addJournalEntry(request);
+        if (path === "/api/adherence") return this.recordAdherence(request);
       }
       return json({ error: "Not found" }, 404);
     } catch (e: any) {
@@ -395,6 +423,146 @@ export class TetherData {
     user.language = body.language;
     await this.save();
     return json({ ok: true });
+  }
+
+  // ── Journal ──────────────────────────────────────────────────────
+
+  private async getJournal(url: URL): Promise<Response> {
+    const data = await this.load();
+    const email = url.searchParams.get("email");
+    if (!email) return json({ error: "email required" }, 400);
+    const e = norm(email);
+    const entries = data.journal.filter(j => norm(j.patientEmail) === e);
+    return json(entries.slice(-50));
+  }
+
+  private async addJournalEntry(request: Request): Promise<Response> {
+    const body = await request.json() as { patientEmail: string; text: string };
+    if (!body.patientEmail || !body.text?.trim()) {
+      return json({ error: "Missing patientEmail or text" }, 400);
+    }
+    if (body.text.length > 2000) {
+      return json({ error: "Journal entry too long (max 2000 characters)" }, 400);
+    }
+    const data = await this.load();
+    const entry: JournalEntry = {
+      id: makeId("jrn"),
+      patientEmail: norm(body.patientEmail),
+      text: body.text.trim().slice(0, 2000),
+      createdAt: new Date().toISOString(),
+    };
+    data.journal.push(entry);
+    // Keep max 100 per patient
+    const e = norm(body.patientEmail);
+    const patientEntries = data.journal.filter(j => norm(j.patientEmail) === e);
+    if (patientEntries.length > 100) {
+      const toRemove = new Set(patientEntries.slice(0, patientEntries.length - 100).map(j => j.id));
+      data.journal = data.journal.filter(j => !toRemove.has(j.id));
+    }
+    await this.save();
+    return json(entry);
+  }
+
+  // ── Medication Adherence ──────────────────────────────────────────
+
+  private async getAdherence(url: URL): Promise<Response> {
+    const data = await this.load();
+    const email = url.searchParams.get("email");
+    if (!email) return json({ error: "email required" }, 400);
+    const e = norm(email);
+    const records = data.adherence.filter(a => norm(a.patientEmail) === e);
+    return json(records.slice(-90));
+  }
+
+  private async recordAdherence(request: Request): Promise<Response> {
+    const body = await request.json() as { patientEmail: string; date: string; taken: boolean };
+    if (!body.patientEmail || !body.date || typeof body.taken !== "boolean") {
+      return json({ error: "Missing patientEmail, date, or taken" }, 400);
+    }
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(body.date)) {
+      return json({ error: "Invalid date format (use YYYY-MM-DD)" }, 400);
+    }
+    const data = await this.load();
+    const e = norm(body.patientEmail);
+    // Upsert: replace existing record for same patient+date
+    data.adherence = data.adherence.filter(a => !(norm(a.patientEmail) === e && a.date === body.date));
+    const record: AdherenceRecord = {
+      id: makeId("adh"),
+      patientEmail: e,
+      date: body.date,
+      taken: body.taken,
+      createdAt: new Date().toISOString(),
+    };
+    data.adherence.push(record);
+    await this.save();
+    return json(record);
+  }
+
+  // ── Recovery Score ────────────────────────────────────────────────
+
+  private async getRecoveryScore(url: URL): Promise<Response> {
+    const data = await this.load();
+    const doctorEmail = url.searchParams.get("doctor");
+    if (!doctorEmail) return json({ error: "doctor email required" }, 400);
+    const de = norm(doctorEmail);
+
+    // Find all patients this doctor has plans for
+    const doctorPlans = data.plans.filter(p => norm(p.doctorEmail) === de);
+    const scores = doctorPlans.map(plan => {
+      const pe = norm(plan.patientEmail);
+      const now = Date.now();
+      const sevenDaysAgo = now - 7 * 24 * 60 * 60 * 1000;
+
+      // Biomarker score (0-30): recent readings and their status
+      const recentBio = data.biomarkers.filter(b => norm(b.patientEmail) === pe && new Date(b.timestamp).getTime() > sevenDaysAgo);
+      let bioScore = 15; // default if no readings
+      if (recentBio.length > 0) {
+        const alertCount = recentBio.filter(b => b.report.status === "alert").length;
+        const monitorCount = recentBio.filter(b => b.report.status === "monitor").length;
+        const normalCount = recentBio.filter(b => b.report.status === "normal").length;
+        const total = recentBio.length;
+        bioScore = Math.round(((normalCount * 30 + monitorCount * 15 + alertCount * 0) / total));
+      }
+
+      // Adherence score (0-30): last 7 days
+      const last7: string[] = [];
+      for (let d = 0; d < 7; d++) {
+        const date = new Date(now - d * 24 * 60 * 60 * 1000).toISOString().split("T")[0];
+        last7.push(date);
+      }
+      const adherenceRecords = data.adherence.filter(a => norm(a.patientEmail) === pe && last7.includes(a.date));
+      const takenCount = adherenceRecords.filter(a => a.taken).length;
+      const adherenceScore = adherenceRecords.length > 0 ? Math.round((takenCount / 7) * 30) : 15;
+
+      // Engagement score (0-20): messages sent in last 7 days
+      const recentMsgs = data.messages.filter(m => norm(m.patientEmail) === pe && norm(m.doctorEmail) === de && new Date(m.createdAt).getTime() > sevenDaysAgo);
+      const patientMsgs = recentMsgs.filter(m => m.senderRole === "patient").length;
+      const engagementScore = Math.min(20, patientMsgs * 5);
+
+      // Journal score (0-20): entries in last 7 days
+      const recentJournal = data.journal.filter(j => norm(j.patientEmail) === pe && new Date(j.createdAt).getTime() > sevenDaysAgo);
+      const journalScore = Math.min(20, recentJournal.length * 5);
+
+      const total = bioScore + adherenceScore + engagementScore + journalScore;
+
+      return {
+        patientEmail: plan.patientEmail,
+        patientName: plan.patientName,
+        score: Math.min(100, total),
+        breakdown: {
+          biomarker: bioScore,
+          adherence: adherenceScore,
+          engagement: engagementScore,
+          journal: journalScore,
+        },
+        recentAlerts: recentBio.filter(b => b.report.status === "alert").length,
+        daysSinceDischarge: plan.dischargeDate ? Math.floor((now - new Date(plan.dischargeDate).getTime()) / (24 * 60 * 60 * 1000)) : null,
+      };
+    });
+
+    // Sort by score ascending (lowest = most at risk = top)
+    scores.sort((a, b) => a.score - b.score);
+    return json(scores);
   }
 }
 

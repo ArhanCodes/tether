@@ -31,8 +31,14 @@ import {
   normalizeEmail,
   saveSession,
   cacheUser,
+  getJournal,
+  addJournalEntry as apiAddJournalEntry,
+  getAdherence,
+  recordAdherence,
   type CareMessage,
   type BiomarkerRecord,
+  type JournalEntry,
+  type AdherenceRecord,
 } from "../lib/appData";
 import { quickPrompts, type DoctorPlan, type QuickPromptIntent } from "../lib/showcase";
 import { generateAIReply, generateAIQuickReply, type AIContext } from "../lib/ai";
@@ -146,15 +152,20 @@ export function PatientScreen({ navigation, route }: Props) {
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const finalVoiceTranscriptRef = useRef("");
   const [recordingSeconds, setRecordingSeconds] = useState(0);
+  const [journalEntries, setJournalEntries] = useState<JournalEntry[]>([]);
+  const [journalInput, setJournalInput] = useState("");
+  const [adherenceRecords, setAdherenceRecords] = useState<AdherenceRecord[]>([]);
 
   useEffect(() => {
     void (async () => {
       try {
         // Load independently so one failure doesn't block others
-        const [plansResult, msgsResult, bioResult] = await Promise.allSettled([
+        const [plansResult, msgsResult, bioResult, journalResult, adherenceResult] = await Promise.allSettled([
           getPublishedPlans(user.email),
           getCareMessages(user.email),
           getBiomarkerHistory(user.email),
+          getJournal(user.email),
+          getAdherence(user.email),
         ]);
 
         if (msgsResult.status === "fulfilled") {
@@ -165,6 +176,12 @@ export function PatientScreen({ navigation, route }: Props) {
           if (bioResult.value.length > 0) {
             setBiomarkerReport(bioResult.value[bioResult.value.length - 1].report);
           }
+        }
+        if (journalResult.status === "fulfilled") {
+          setJournalEntries(journalResult.value);
+        }
+        if (adherenceResult.status === "fulfilled") {
+          setAdherenceRecords(adherenceResult.value);
         }
 
         if (plansResult.status === "fulfilled") {
@@ -272,7 +289,7 @@ export function PatientScreen({ navigation, route }: Props) {
     setPatientInput("");
     setIsThinking(true);
 
-    const aiCtx: AIContext = { plan: activePlan, language, latestBiomarker: biomarkerReport };
+    const aiCtx: AIContext = { plan: activePlan, language, latestBiomarker: biomarkerReport, journalEntries, adherenceRecords };
 
     try {
       const reply = await generateAIReply(aiCtx, message);
@@ -318,7 +335,7 @@ export function PatientScreen({ navigation, route }: Props) {
     setMessages((cur) => [...cur, patientMsg]);
     setIsThinking(true);
 
-    const aiCtx: AIContext = { plan: activePlan, language, latestBiomarker: biomarkerReport };
+    const aiCtx: AIContext = { plan: activePlan, language, latestBiomarker: biomarkerReport, journalEntries, adherenceRecords };
 
     try {
       const reply = await generateAIQuickReply(aiCtx, label, intent);
@@ -472,6 +489,41 @@ export function PatientScreen({ navigation, route }: Props) {
     } catch (error) {
       Alert.alert(i.error, i.sendFailed);
       console.error("Send message error:", error);
+    }
+  }
+
+  async function handleSaveJournal() {
+    const text = journalInput.trim();
+    if (!text) return;
+    if (text.length > 2000) {
+      Alert.alert(i.error, i.journalTooLong);
+      return;
+    }
+    try {
+      const entry = await apiAddJournalEntry(user.email, text);
+      setJournalEntries((prev) => [...prev, entry]);
+      setJournalInput("");
+      Alert.alert(i.sent, i.journalSaved);
+    } catch (error) {
+      Alert.alert(i.error, i.sendFailed);
+      console.error("Journal save error:", error);
+    }
+  }
+
+  async function handleAdherence(taken: boolean) {
+    const today = new Date().toISOString().split("T")[0];
+    const alreadyRecorded = adherenceRecords.some((r) => r.date === today);
+    if (alreadyRecorded) {
+      Alert.alert(i.medicationAdherence, i.todayRecorded);
+      return;
+    }
+    try {
+      const record = await recordAdherence(user.email, today, taken);
+      setAdherenceRecords((prev) => [...prev, record]);
+      Alert.alert(i.sent, i.adherenceRecorded);
+    } catch (error) {
+      Alert.alert(i.error, i.sendFailed);
+      console.error("Adherence error:", error);
     }
   }
 
@@ -688,6 +740,82 @@ export function PatientScreen({ navigation, route }: Props) {
               </View>
             ) : null}
             {biomarkerReport ? <BiomarkerCard report={biomarkerReport} history={biomarkerHistory} /> : null}
+          </SectionCard>
+
+          <SectionCard title={i.journalTitle} subtitle={i.journalSubtitle}>
+            {activePlan.dischargeDate ? (
+              <View style={styles.dischargeBadge}>
+                <Text style={styles.dischargeBadgeText}>
+                  {tpl(i.daysSinceDischarge, { days: Math.floor((Date.now() - new Date(activePlan.dischargeDate).getTime()) / (1000 * 60 * 60 * 24)) })}
+                </Text>
+              </View>
+            ) : null}
+            <TextInput
+              value={journalInput}
+              onChangeText={setJournalInput}
+              placeholder={i.journalPlaceholder}
+              placeholderTextColor="#94a3b8"
+              style={styles.chatInput}
+              multiline
+            />
+            <AnimatedButton
+              label={i.addJournalEntry}
+              variant="primary"
+              onPress={() => void handleSaveJournal()}
+              accessibilityLabel={i.addJournalEntry}
+            />
+            {journalEntries.length === 0 ? (
+              <View style={styles.emptyState}>
+                <Text style={styles.emptyStateIcon}>📓</Text>
+                <Text style={styles.emptyStateText}>{i.noJournalEntries}</Text>
+              </View>
+            ) : (
+              <ScrollView
+                style={styles.chatLog}
+                contentContainerStyle={styles.chatLogContent}
+                nestedScrollEnabled
+                showsVerticalScrollIndicator={false}
+              >
+                {[...journalEntries].reverse().slice(0, 10).map((entry) => (
+                  <View key={entry.id} style={styles.journalEntry}>
+                    <Text style={styles.journalDate}>{formatTimestamp(entry.createdAt)}</Text>
+                    <Text style={styles.journalText}>{entry.text}</Text>
+                  </View>
+                ))}
+              </ScrollView>
+            )}
+          </SectionCard>
+
+          <SectionCard title={i.medicationAdherence} subtitle={i.adherenceSubtitle}>
+            <Text style={styles.adherenceQuestion}>{i.didYouTakeMeds}</Text>
+            <View style={styles.buttonRow}>
+              <AnimatedButton
+                label={i.yesTook}
+                variant="primary"
+                onPress={() => void handleAdherence(true)}
+                accessibilityLabel={i.yesTook}
+              />
+              <AnimatedButton
+                label={i.noMissed}
+                variant="secondary"
+                onPress={() => void handleAdherence(false)}
+                accessibilityLabel={i.noMissed}
+              />
+            </View>
+            {adherenceRecords.length > 0 ? (
+              <View style={styles.adherenceStats}>
+                <Text style={styles.adherenceStatsTitle}>{i.adherenceStreak}</Text>
+                <View style={styles.adherenceDots}>
+                  {adherenceRecords.slice(-7).map((r) => (
+                    <View key={r.id} style={[styles.adherenceDot, r.taken ? styles.adherenceTaken : styles.adherenceMissed]} />
+                  ))}
+                </View>
+                <View style={styles.previewGrid}>
+                  <SummaryPill label={tpl(i.takenCount, { count: adherenceRecords.slice(-7).filter(r => r.taken).length })} value="✓" />
+                  <SummaryPill label={tpl(i.missedCount, { count: adherenceRecords.slice(-7).filter(r => !r.taken).length })} value="✗" />
+                </View>
+              </View>
+            ) : null}
           </SectionCard>
 
           <SectionCard
@@ -982,5 +1110,69 @@ const styles = StyleSheet.create({
     fontSize: 14,
     textAlign: "center",
     lineHeight: 21,
+  },
+  journalEntry: {
+    padding: 12,
+    borderRadius: 14,
+    backgroundColor: "#ffffff",
+    borderWidth: 1,
+    borderColor: "#e2e8f0",
+  },
+  journalDate: {
+    color: "#94a3b8",
+    fontSize: 12,
+    fontWeight: "600",
+    marginBottom: 4,
+  },
+  journalText: {
+    color: "#334155",
+    fontSize: 14,
+    lineHeight: 21,
+  },
+  dischargeBadge: {
+    alignSelf: "flex-start",
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 999,
+    backgroundColor: "#dbeafe",
+  },
+  dischargeBadgeText: {
+    color: "#1d4ed8",
+    fontSize: 12,
+    fontWeight: "700",
+  },
+  adherenceQuestion: {
+    color: "#0f172a",
+    fontSize: 16,
+    fontWeight: "700",
+    lineHeight: 24,
+  },
+  adherenceStats: {
+    padding: 14,
+    borderRadius: 18,
+    backgroundColor: "#f8fafc",
+    borderWidth: 1,
+    borderColor: "#e2e8f0",
+    gap: 10,
+  },
+  adherenceStatsTitle: {
+    color: "#0f172a",
+    fontSize: 14,
+    fontWeight: "800",
+  },
+  adherenceDots: {
+    flexDirection: "row",
+    gap: 8,
+  },
+  adherenceDot: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+  },
+  adherenceTaken: {
+    backgroundColor: "#22c55e",
+  },
+  adherenceMissed: {
+    backgroundColor: "#ef4444",
   },
 });

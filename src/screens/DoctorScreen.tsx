@@ -21,15 +21,18 @@ import {
   getCareMessages,
   getDoctorDraft,
   getPublishedPlans,
+  getRecoveryScores,
   normalizeEmail,
   saveDoctorDraft,
   saveSession,
   upsertPublishedPlan,
   type CareMessage,
+  type RecoveryScoreResult,
   type UserAccount,
 } from "../lib/appData";
 import { demoDoctorPlan, summarizePlan, type DoctorPlan } from "../lib/showcase";
 import { useLanguage } from "../lib/LanguageContext";
+import { tpl } from "../lib/i18n";
 import type { RootStackParamList } from "../navigation/AppNavigator";
 
 type Tone = DoctorPlan["tone"];
@@ -75,17 +78,20 @@ export function DoctorScreen({ navigation, route }: Props) {
   const [draftPlan, setDraftPlan] = useState<DoctorPlan>(demoDoctorPlan);
   const [doctorThreadPatientEmail, setDoctorThreadPatientEmail] = useState("");
   const [doctorReplyInput, setDoctorReplyInput] = useState("");
+  const [recoveryScores, setRecoveryScores] = useState<RecoveryScoreResult[]>([]);
 
   useEffect(() => {
     void (async () => {
       try {
-        const [plans, msgs, draft] = await Promise.all([
+        const [plans, msgs, draft, scores] = await Promise.all([
           getPublishedPlans(user.email),
           getCareMessages(user.email),
           getDoctorDraft(user.email),
+          getRecoveryScores(user.email).catch(() => [] as RecoveryScoreResult[]),
         ]);
         setPublishedPlans(plans);
         setCareMessages(msgs);
+        setRecoveryScores(scores);
         // Load draft: local draft (if it has content) > latest published plan > empty starter
         const myPublished = plans.find(p => normalizeEmail(p.doctorEmail) === normalizeEmail(user.email));
         const hasDraftContent = draft && (draft.diagnosis || draft.symptomSummary || draft.patientName);
@@ -216,6 +222,7 @@ export function DoctorScreen({ navigation, route }: Props) {
     try {
       setPublishedPlans(await getPublishedPlans(user.email));
       setCareMessages(await getCareMessages(user.email));
+      setRecoveryScores(await getRecoveryScores(user.email).catch(() => []));
     } catch (error) {
       Alert.alert(i.refreshFailed, i.refreshFailedMsg);
       console.error("Failed to refresh:", error);
@@ -299,6 +306,7 @@ export function DoctorScreen({ navigation, route }: Props) {
         <InputField label={i.dailyInstructions} value={joinLines(draftPlan.dailyInstructions)} onChangeText={(v) => updateListField("dailyInstructions", v)} placeholder="Rest and hydrate" multiline />
         <InputField label={i.redFlags} value={joinLines(draftPlan.redFlags)} onChangeText={(v) => updateListField("redFlags", v)} placeholder="Fever above 38 C" multiline />
         <InputField label={i.followUp} value={draftPlan.followUp} onChangeText={(v) => updateField("followUp", v)} placeholder="Nurse call tomorrow morning" multiline />
+        <InputField label={i.dischargeDate} value={draftPlan.dischargeDate ?? ""} onChangeText={(v) => updateField("dischargeDate", v)} placeholder="2026-04-08" />
         <InputField label={i.doctorNoteAI} value={draftPlan.doctorNotes} onChangeText={(v) => updateField("doctorNotes", v)} placeholder="Explain in simple language." multiline />
 
         <View style={styles.inputGroup}>
@@ -327,6 +335,38 @@ export function DoctorScreen({ navigation, route }: Props) {
           <SummaryPill label={i.tone} value={toneLabel(draftPlan.tone)} />
           <SummaryPill label={i.updated} value={formatTimestamp(draftPlan.lastUpdatedAt)} />
         </View>
+      </SectionCard>
+
+      <SectionCard title={i.recoveryScores} subtitle={i.recoveryScoresSubtitle}>
+        {recoveryScores.length === 0 ? (
+          <Text style={styles.previewText}>{i.noScoresYet}</Text>
+        ) : (
+          recoveryScores.map((s) => {
+            const scoreLabel = s.score < 40 ? i.atRisk : s.score < 70 ? i.recovering : i.onTrack;
+            const scoreColor = s.score < 40 ? "#ef4444" : s.score < 70 ? "#f59e0b" : "#22c55e";
+            return (
+              <View key={s.patientEmail} style={styles.scoreCard}>
+                <View style={styles.scoreHeader}>
+                  <Text style={styles.scorePatient}>{s.patientName}</Text>
+                  <View style={[styles.scoreBadge, { backgroundColor: scoreColor + "22" }]}>
+                    <Text style={[styles.scoreBadgeText, { color: scoreColor }]}>
+                      {s.score}/100 · {scoreLabel}
+                    </Text>
+                  </View>
+                </View>
+                <View style={styles.scoreBar}>
+                  <View style={[styles.scoreBarFill, { width: `${s.score}%`, backgroundColor: scoreColor }]} />
+                </View>
+                <View style={styles.previewGrid}>
+                  <SummaryPill label={i.biomarkerScore} value={`${s.breakdown.biomarker}/30`} />
+                  <SummaryPill label={i.adherenceScore} value={`${s.breakdown.adherence}/30`} />
+                  <SummaryPill label={i.engagementScore} value={`${s.breakdown.engagement}/20`} />
+                  <SummaryPill label={i.journalScore} value={`${s.breakdown.journal}/20`} />
+                </View>
+              </View>
+            );
+          })
+        )}
       </SectionCard>
 
       <SectionCard title={i.accountSafetyDoctor} subtitle={i.accountSafetyDoctorSubtitle}>
@@ -515,5 +555,44 @@ const styles = StyleSheet.create({
     color: "#0f172a",
     fontSize: 15,
     textAlignVertical: "top",
+  },
+  scoreCard: {
+    padding: 16,
+    borderRadius: 18,
+    backgroundColor: "#f8fafc",
+    borderWidth: 1,
+    borderColor: "#e2e8f0",
+    gap: 10,
+  },
+  scoreHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    flexWrap: "wrap",
+    gap: 8,
+  },
+  scorePatient: {
+    color: "#0f172a",
+    fontSize: 16,
+    fontWeight: "800",
+  },
+  scoreBadge: {
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 999,
+  },
+  scoreBadgeText: {
+    fontSize: 12,
+    fontWeight: "800",
+  },
+  scoreBar: {
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: "#e2e8f0",
+    overflow: "hidden",
+  },
+  scoreBarFill: {
+    height: "100%",
+    borderRadius: 4,
   },
 });

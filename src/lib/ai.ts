@@ -7,11 +7,14 @@ import {
   type QuickPromptIntent,
 } from "./showcase";
 import type { BiomarkerReport } from "./biomarker";
+import type { JournalEntry, AdherenceRecord } from "./appData";
 
 export type AIContext = {
   plan: DoctorPlan;
   language?: string;
   latestBiomarker?: BiomarkerReport | null;
+  journalEntries?: JournalEntry[];
+  adherenceRecords?: AdherenceRecord[];
 };
 
 const AI_TIMEOUT_MS = 30_000;
@@ -23,7 +26,7 @@ function fetchWithTimeout(url: string, init: RequestInit, timeoutMs = AI_TIMEOUT
 }
 
 function buildSystemPrompt(ctx: AIContext): string {
-  const { plan, language, latestBiomarker } = ctx;
+  const { plan, language, latestBiomarker, journalEntries, adherenceRecords } = ctx;
   const lang = language && language !== "English" ? language : null;
 
   let prompt = `You are Tether AI, a clinical companion assistant for post-discharge patients. You answer questions based ONLY on the care plan the patient's doctor published. Never diagnose, prescribe, or give advice beyond what the doctor documented.
@@ -40,6 +43,37 @@ DOCTOR'S CARE PLAN:
 - Follow-up: ${plan.followUp}
 - Doctor's note on tone: ${plan.doctorNotes}
 - Preferred tone: ${plan.tone}`;
+
+  // Time-aware prompting: days since discharge
+  if (plan.dischargeDate) {
+    const dischargeDays = Math.floor((Date.now() - new Date(plan.dischargeDate).getTime()) / (1000 * 60 * 60 * 24));
+    prompt += `\n- Days since discharge: ${dischargeDays}`;
+    if (dischargeDays <= 3) {
+      prompt += ` (EARLY recovery — be extra cautious, encourage rest and monitoring)`;
+    } else if (dischargeDays <= 14) {
+      prompt += ` (MID recovery — encourage gradual activity and adherence)`;
+    } else {
+      prompt += ` (EXTENDED recovery — focus on long-term habits and follow-up)`;
+    }
+  }
+
+  // Medication adherence context
+  if (adherenceRecords && adherenceRecords.length > 0) {
+    const last7 = adherenceRecords.slice(-7);
+    const taken = last7.filter(r => r.taken).length;
+    const missed = last7.length - taken;
+    prompt += `\n\nMEDICATION ADHERENCE (last 7 days): ${taken} taken, ${missed} missed out of ${last7.length} logged days.`;
+    if (missed > 2) {
+      prompt += ` The patient has missed medications frequently — gently remind them about the importance of taking medicines as prescribed.`;
+    }
+  }
+
+  // Journal context — recent entries for emotional/symptom awareness
+  if (journalEntries && journalEntries.length > 0) {
+    const recent = journalEntries.slice(-3);
+    const journalText = recent.map(e => `[${e.createdAt.split("T")[0]}] ${e.text}`).join("\n");
+    prompt += `\n\nRECENT PATIENT JOURNAL ENTRIES:\n${journalText}\n\nUse journal entries to understand the patient's emotional state and symptoms. If they mention worsening symptoms or distress, factor that into your urgency assessment.`;
+  }
 
   // Inject latest biomarker data if available (engine connection)
   if (latestBiomarker) {

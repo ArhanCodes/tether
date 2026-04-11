@@ -222,6 +222,44 @@ type TranslationKeys = {
   connectionError: string;
   connectionErrorMsg: string;
   genericErrorMsg: string;
+
+  // Patient Journal
+  journalTitle: string;
+  journalSubtitle: string;
+  journalPlaceholder: string;
+  addJournalEntry: string;
+  noJournalEntries: string;
+  journalSaved: string;
+  journalTooLong: string;
+
+  // Medication Adherence
+  medicationAdherence: string;
+  adherenceSubtitle: string;
+  didYouTakeMeds: string;
+  yesTook: string;
+  noMissed: string;
+  adherenceRecorded: string;
+  adherenceStreak: string;
+  takenCount: string;
+  missedCount: string;
+  todayRecorded: string;
+
+  // Recovery Score (doctor)
+  recoveryScores: string;
+  recoveryScoresSubtitle: string;
+  score: string;
+  biomarkerScore: string;
+  adherenceScore: string;
+  engagementScore: string;
+  journalScore: string;
+  atRisk: string;
+  recovering: string;
+  onTrack: string;
+  noScoresYet: string;
+
+  // Discharge date
+  dischargeDate: string;
+  daysSinceDischarge: string;
 };
 
 const en: TranslationKeys = {
@@ -404,6 +442,36 @@ const en: TranslationKeys = {
   connectionError: "Connection Error",
   connectionErrorMsg: "Could not load your care plan. Pull down to refresh or restart the app.",
   genericErrorMsg: "Could not connect to the server. Check your internet connection.",
+  journalTitle: "Patient Journal",
+  journalSubtitle: "Write how you feel each day. Your entries help the AI give better answers.",
+  journalPlaceholder: "How are you feeling today?",
+  addJournalEntry: "Save Entry",
+  noJournalEntries: "No journal entries yet. Writing about your day helps track your recovery.",
+  journalSaved: "Journal entry saved.",
+  journalTooLong: "Journal entry is too long. Please keep it under 2000 characters.",
+  medicationAdherence: "Medication Tracker",
+  adherenceSubtitle: "Log whether you took your medicines today.",
+  didYouTakeMeds: "Did you take all your medicines today?",
+  yesTook: "Yes, I took them",
+  noMissed: "No, I missed",
+  adherenceRecorded: "Medication log saved for today.",
+  adherenceStreak: "Last 7 days",
+  takenCount: "{count} taken",
+  missedCount: "{count} missed",
+  todayRecorded: "Today already recorded.",
+  recoveryScores: "Recovery Scores",
+  recoveryScoresSubtitle: "Patients sorted by risk — lowest score needs the most attention.",
+  score: "Score",
+  biomarkerScore: "Biomarker",
+  adherenceScore: "Adherence",
+  engagementScore: "Engagement",
+  journalScore: "Journal",
+  atRisk: "At Risk",
+  recovering: "Recovering",
+  onTrack: "On Track",
+  noScoresYet: "No recovery scores available yet. Scores appear after patients start using the app.",
+  dischargeDate: "Discharge date",
+  daysSinceDischarge: "Day {days} since discharge",
 };
 
 const es: TranslationKeys = {
@@ -586,6 +654,36 @@ const es: TranslationKeys = {
   connectionError: "Error de Conexión",
   connectionErrorMsg: "No se pudo cargar tu plan de cuidado. Desliza para actualizar o reinicia la aplicación.",
   genericErrorMsg: "No se pudo conectar al servidor. Revisa tu conexión a internet.",
+  journalTitle: "Diario del Paciente",
+  journalSubtitle: "Escribe cómo te sientes cada día. Tus entradas ayudan a la IA a dar mejores respuestas.",
+  journalPlaceholder: "¿Cómo te sientes hoy?",
+  addJournalEntry: "Guardar Entrada",
+  noJournalEntries: "Sin entradas aún. Escribir sobre tu día ayuda a seguir tu recuperación.",
+  journalSaved: "Entrada del diario guardada.",
+  journalTooLong: "La entrada es demasiado larga. Mantenla por debajo de 2000 caracteres.",
+  medicationAdherence: "Control de Medicamentos",
+  adherenceSubtitle: "Registra si tomaste tus medicinas hoy.",
+  didYouTakeMeds: "¿Tomaste todas tus medicinas hoy?",
+  yesTook: "Sí, las tomé",
+  noMissed: "No, las olvidé",
+  adherenceRecorded: "Registro de medicamentos guardado para hoy.",
+  adherenceStreak: "Últimos 7 días",
+  takenCount: "{count} tomados",
+  missedCount: "{count} olvidados",
+  todayRecorded: "Hoy ya está registrado.",
+  recoveryScores: "Puntajes de Recuperación",
+  recoveryScoresSubtitle: "Pacientes ordenados por riesgo — el puntaje más bajo necesita más atención.",
+  score: "Puntaje",
+  biomarkerScore: "Biomarcador",
+  adherenceScore: "Adherencia",
+  engagementScore: "Participación",
+  journalScore: "Diario",
+  atRisk: "En Riesgo",
+  recovering: "Recuperándose",
+  onTrack: "En Camino",
+  noScoresYet: "No hay puntajes disponibles aún. Aparecen cuando los pacientes empiezan a usar la app.",
+  dischargeDate: "Fecha de alta",
+  daysSinceDischarge: "Día {days} desde el alta",
 };
 
 const hi: TranslationKeys = {
@@ -768,6 +866,36 @@ const hi: TranslationKeys = {
   connectionError: "कनेक्शन त्रुटि",
   connectionErrorMsg: "आपका देखभाल प्लान लोड नहीं हो सका। नीचे खींचकर अपडेट करें या ऐप रीस्टार्ट करें।",
   genericErrorMsg: "सर्वर से कनेक्ट नहीं हो सका। अपना इंटरनेट कनेक्शन जांचें।",
+  journalTitle: "मरीज़ डायरी",
+  journalSubtitle: "हर दिन लिखें कि आप कैसा महसूस कर रहे हैं। आपकी प्रविष्टियाँ AI को बेहतर जवाब देने में मदद करती हैं।",
+  journalPlaceholder: "आज आप कैसा महसूस कर रहे हैं?",
+  addJournalEntry: "प्रविष्टि सहेजें",
+  noJournalEntries: "अभी कोई प्रविष्टि नहीं। अपने दिन के बारे में लिखने से आपकी रिकवरी ट्रैक करने में मदद मिलती है।",
+  journalSaved: "डायरी प्रविष्टि सहेजी गई।",
+  journalTooLong: "प्रविष्टि बहुत लंबी है। कृपया 2000 अक्षरों से कम रखें।",
+  medicationAdherence: "दवा ट्रैकर",
+  adherenceSubtitle: "रिकॉर्ड करें कि आपने आज दवाएं ली हैं या नहीं।",
+  didYouTakeMeds: "क्या आपने आज सभी दवाएं ली हैं?",
+  yesTook: "हाँ, मैंने ली",
+  noMissed: "नहीं, मैंने छोड़ी",
+  adherenceRecorded: "आज का दवा रिकॉर्ड सहेजा गया।",
+  adherenceStreak: "पिछले 7 दिन",
+  takenCount: "{count} ली गई",
+  missedCount: "{count} छूट गई",
+  todayRecorded: "आज पहले से रिकॉर्ड है।",
+  recoveryScores: "रिकवरी स्कोर",
+  recoveryScoresSubtitle: "जोखिम के अनुसार मरीज़ — सबसे कम स्कोर को सबसे अधिक ध्यान चाहिए।",
+  score: "स्कोर",
+  biomarkerScore: "बायोमार्कर",
+  adherenceScore: "पालन",
+  engagementScore: "सहभागिता",
+  journalScore: "डायरी",
+  atRisk: "जोखिम में",
+  recovering: "ठीक हो रहे",
+  onTrack: "सही राह पर",
+  noScoresYet: "अभी कोई स्कोर उपलब्ध नहीं। मरीज़ ऐप का उपयोग शुरू करने पर स्कोर दिखाई देंगे।",
+  dischargeDate: "छुट्टी की तारीख",
+  daysSinceDischarge: "छुट्टी के बाद दिन {days}",
 };
 
 const zh: TranslationKeys = {
@@ -950,6 +1078,36 @@ const zh: TranslationKeys = {
   connectionError: "连接错误",
   connectionErrorMsg: "无法加载您的护理计划。下拉刷新或重启应用。",
   genericErrorMsg: "无法连接到服务器。请检查您的网络连接。",
+  journalTitle: "患者日记",
+  journalSubtitle: "每天写下您的感受。您的记录帮助 AI 给出更好的回答。",
+  journalPlaceholder: "您今天感觉怎么样？",
+  addJournalEntry: "保存记录",
+  noJournalEntries: "还没有日记记录。写下您的一天有助于跟踪康复。",
+  journalSaved: "日记记录已保存。",
+  journalTooLong: "记录太长。请保持在2000字以内。",
+  medicationAdherence: "用药追踪",
+  adherenceSubtitle: "记录您今天是否服药。",
+  didYouTakeMeds: "您今天服了所有药物吗？",
+  yesTook: "是的，已服用",
+  noMissed: "没有，漏服了",
+  adherenceRecorded: "今天的用药记录已保存。",
+  adherenceStreak: "过去7天",
+  takenCount: "{count} 次服用",
+  missedCount: "{count} 次漏服",
+  todayRecorded: "今天已记录。",
+  recoveryScores: "康复评分",
+  recoveryScoresSubtitle: "按风险排列患者——最低分需要最多关注。",
+  score: "评分",
+  biomarkerScore: "生物标志物",
+  adherenceScore: "依从性",
+  engagementScore: "参与度",
+  journalScore: "日记",
+  atRisk: "高风险",
+  recovering: "恢复中",
+  onTrack: "正常",
+  noScoresYet: "暂无康复评分。患者开始使用应用后将显示评分。",
+  dischargeDate: "出院日期",
+  daysSinceDischarge: "出院第 {days} 天",
 };
 
 const fr: TranslationKeys = {
@@ -1132,6 +1290,36 @@ const fr: TranslationKeys = {
   connectionError: "Erreur de Connexion",
   connectionErrorMsg: "Impossible de charger votre plan de soins. Tirez pour actualiser ou redémarrez l'application.",
   genericErrorMsg: "Impossible de se connecter au serveur. Vérifiez votre connexion internet.",
+  journalTitle: "Journal du Patient",
+  journalSubtitle: "Écrivez comment vous vous sentez chaque jour. Vos entrées aident l'IA à mieux répondre.",
+  journalPlaceholder: "Comment vous sentez-vous aujourd'hui ?",
+  addJournalEntry: "Enregistrer",
+  noJournalEntries: "Pas encore d'entrées. Écrire sur votre journée aide à suivre votre rétablissement.",
+  journalSaved: "Entrée du journal enregistrée.",
+  journalTooLong: "L'entrée est trop longue. Gardez-la sous 2000 caractères.",
+  medicationAdherence: "Suivi des Médicaments",
+  adherenceSubtitle: "Indiquez si vous avez pris vos médicaments aujourd'hui.",
+  didYouTakeMeds: "Avez-vous pris tous vos médicaments aujourd'hui ?",
+  yesTook: "Oui, je les ai pris",
+  noMissed: "Non, j'ai oublié",
+  adherenceRecorded: "Suivi des médicaments enregistré pour aujourd'hui.",
+  adherenceStreak: "7 derniers jours",
+  takenCount: "{count} pris",
+  missedCount: "{count} oubliés",
+  todayRecorded: "Aujourd'hui déjà enregistré.",
+  recoveryScores: "Scores de Rétablissement",
+  recoveryScoresSubtitle: "Patients triés par risque — le score le plus bas nécessite le plus d'attention.",
+  score: "Score",
+  biomarkerScore: "Biomarqueur",
+  adherenceScore: "Observance",
+  engagementScore: "Engagement",
+  journalScore: "Journal",
+  atRisk: "À Risque",
+  recovering: "En Rétablissement",
+  onTrack: "En Bonne Voie",
+  noScoresYet: "Pas encore de scores. Les scores apparaissent quand les patients commencent à utiliser l'application.",
+  dischargeDate: "Date de sortie",
+  daysSinceDischarge: "Jour {days} depuis la sortie",
 };
 
 const ar: TranslationKeys = {
@@ -1314,6 +1502,36 @@ const ar: TranslationKeys = {
   connectionError: "خطأ في الاتصال",
   connectionErrorMsg: "تعذر تحميل خطة الرعاية الخاصة بك. اسحب للتحديث أو أعد تشغيل التطبيق.",
   genericErrorMsg: "تعذر الاتصال بالخادم. تحقق من اتصالك بالإنترنت.",
+  journalTitle: "يوميات المريض",
+  journalSubtitle: "اكتب كيف تشعر كل يوم. مدخلاتك تساعد الذكاء الاصطناعي على تقديم إجابات أفضل.",
+  journalPlaceholder: "كيف تشعر اليوم؟",
+  addJournalEntry: "حفظ المدخل",
+  noJournalEntries: "لا توجد مدخلات بعد. الكتابة عن يومك تساعد في تتبع تعافيك.",
+  journalSaved: "تم حفظ مدخل اليوميات.",
+  journalTooLong: "المدخل طويل جداً. يرجى إبقاؤه أقل من 2000 حرف.",
+  medicationAdherence: "متتبع الأدوية",
+  adherenceSubtitle: "سجّل ما إذا كنت قد تناولت أدويتك اليوم.",
+  didYouTakeMeds: "هل تناولت جميع أدويتك اليوم؟",
+  yesTook: "نعم، تناولتها",
+  noMissed: "لا، نسيت",
+  adherenceRecorded: "تم حفظ سجل الأدوية لليوم.",
+  adherenceStreak: "آخر 7 أيام",
+  takenCount: "{count} مرات تناول",
+  missedCount: "{count} مرات فائتة",
+  todayRecorded: "تم التسجيل لليوم بالفعل.",
+  recoveryScores: "درجات التعافي",
+  recoveryScoresSubtitle: "المرضى مرتبون حسب المخاطر — أقل درجة تحتاج أكبر اهتمام.",
+  score: "الدرجة",
+  biomarkerScore: "المؤشر الحيوي",
+  adherenceScore: "الالتزام",
+  engagementScore: "المشاركة",
+  journalScore: "اليوميات",
+  atRisk: "معرض للخطر",
+  recovering: "في طور التعافي",
+  onTrack: "على المسار الصحيح",
+  noScoresYet: "لا توجد درجات تعافي حتى الآن. تظهر الدرجات عندما يبدأ المرضى باستخدام التطبيق.",
+  dischargeDate: "تاريخ الخروج",
+  daysSinceDischarge: "اليوم {days} منذ الخروج",
 };
 
 const translations: Record<Language, TranslationKeys> = {

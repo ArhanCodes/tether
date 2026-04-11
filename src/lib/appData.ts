@@ -185,6 +185,60 @@ export async function getUsers(role?: UserRole): Promise<UserAccount[]> {
   return apiFetch<UserAccount[]>(`/api/users${query}`);
 }
 
+// ── Journal (server) ────────────────────────────────────────────────
+
+export type JournalEntry = {
+  id: string;
+  patientEmail: string;
+  text: string;
+  createdAt: string;
+};
+
+export async function getJournal(patientEmail: string): Promise<JournalEntry[]> {
+  return apiFetch<JournalEntry[]>(`/api/journal?email=${encodeURIComponent(patientEmail)}`);
+}
+
+export async function addJournalEntry(patientEmail: string, text: string): Promise<JournalEntry> {
+  return apiFetch<JournalEntry>("/api/journal", {
+    method: "POST",
+    body: JSON.stringify({ patientEmail, text }),
+  });
+}
+
+// ── Medication Adherence (server) ───────────────────────────────────
+
+export type AdherenceRecord = {
+  id: string;
+  patientEmail: string;
+  date: string;
+  taken: boolean;
+  createdAt: string;
+};
+
+export async function getAdherence(patientEmail: string): Promise<AdherenceRecord[]> {
+  return apiFetch<AdherenceRecord[]>(`/api/adherence?email=${encodeURIComponent(patientEmail)}`);
+}
+
+export async function recordAdherence(patientEmail: string, date: string, taken: boolean): Promise<AdherenceRecord> {
+  return apiFetch<AdherenceRecord>("/api/adherence", {
+    method: "POST",
+    body: JSON.stringify({ patientEmail, date, taken }),
+  });
+}
+
+// ── Recovery Score (server) ─────────────────────────────────────────
+
+export type RecoveryScoreResult = {
+  patientEmail: string;
+  patientName: string;
+  score: number;
+  breakdown: { biomarker: number; adherence: number; engagement: number; journal: number };
+};
+
+export async function getRecoveryScores(doctorEmail: string): Promise<RecoveryScoreResult[]> {
+  return apiFetch<RecoveryScoreResult[]>(`/api/recovery-score?doctor=${encodeURIComponent(doctorEmail)}`);
+}
+
 // ── Draft (local only — doctor's in-progress plan before publishing) ─
 
 const DRAFT_PREFIX = "tether-draft-plan:";
