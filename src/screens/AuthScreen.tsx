@@ -16,7 +16,7 @@ import {
   type UserAccount,
   type UserRole,
 } from "../lib/appData";
-import { useLanguage } from "../lib/LanguageContext";
+import { useLanguage, SUPPORTED_LANGUAGES, type Language } from "../lib/LanguageContext";
 import type { RootStackParamList } from "../navigation/AppNavigator";
 
 type AuthMode = "login" | "signup";
@@ -32,7 +32,7 @@ function isStrongPassword(value: string): boolean {
 }
 
 export function AuthScreen({ navigation }: Props) {
-  const { i } = useLanguage();
+  const { i, language, setLanguage } = useLanguage();
   const [authMode, setAuthMode] = useState<AuthMode>("login");
   const [authRole, setAuthRole] = useState<UserRole>("patient");
   const [fullName, setFullName] = useState("");
@@ -133,6 +133,18 @@ export function AuthScreen({ navigation }: Props) {
 
   return (
     <>
+      <View style={styles.langRow}>
+        {SUPPORTED_LANGUAGES.map((lang) => (
+          <Pressable
+            key={lang}
+            style={[styles.langChip, language === lang && styles.langChipActive]}
+            onPress={() => setLanguage(lang)}
+          >
+            <Text style={[styles.langChipText, language === lang && styles.langChipTextActive]}>{lang}</Text>
+          </Pressable>
+        ))}
+      </View>
+
       <SectionCard
         title={authMode === "login" ? i.logIn : i.createAccount}
         subtitle={i.authSubtitle}
@@ -294,5 +306,28 @@ const styles = StyleSheet.create({
   infoCardText: {
     color: "#475569",
     lineHeight: 20,
+  },
+  langRow: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 8,
+    justifyContent: "center",
+  },
+  langChip: {
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 999,
+    backgroundColor: "#e2e8f0",
+  },
+  langChipActive: {
+    backgroundColor: "#1d4ed8",
+  },
+  langChipText: {
+    color: "#334155",
+    fontSize: 13,
+    fontWeight: "700",
+  },
+  langChipTextActive: {
+    color: "#ffffff",
   },
 });
