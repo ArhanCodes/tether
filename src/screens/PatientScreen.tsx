@@ -303,7 +303,7 @@ export function PatientScreen({ navigation, route }: Props) {
   function speakReply(text: string) {
     try {
       Speech.stop();
-      Speech.speak(text, { language: getSpeechLang() });
+      Speech.speak(text, { language: getSpeechLang(), voice: "com.apple.ttsbundle.Samantha-compact" });
     } catch (speechError) {
       console.error("Speech synthesis failed:", speechError);
     }
