@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   Alert,
   Pressable,
@@ -81,8 +81,7 @@ export function DoctorScreen({ navigation, route }: Props) {
   const [doctorThreadPatientEmail, setDoctorThreadPatientEmail] = useState("");
   const [doctorReplyInput, setDoctorReplyInput] = useState("");
   const [recoveryScores, setRecoveryScores] = useState<RecoveryScoreResult[]>([]);
-  const sectionPositions = useRef<Record<string, number>>({});
-  const { scrollTo } = useScreenScroll();
+  const { registerSection, scrollToSection } = useScreenScroll();
 
   const navItems: NavItem[] = useMemo(() => [
     { key: "publish", label: i.navPublish },
@@ -91,15 +90,6 @@ export function DoctorScreen({ navigation, route }: Props) {
     { key: "account", label: i.navAccount },
     { key: "messages", label: i.navMessages },
   ], [i]);
-
-  function registerSection(key: string, y: number) {
-    sectionPositions.current[key] = y;
-  }
-
-  function scrollToSection(key: string) {
-    const y = sectionPositions.current[key];
-    if (y !== undefined) scrollTo(y);
-  }
 
   useEffect(() => {
     void (async () => {

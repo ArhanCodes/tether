@@ -158,8 +158,7 @@ export function PatientScreen({ navigation, route }: Props) {
   const [journalEntries, setJournalEntries] = useState<JournalEntry[]>([]);
   const [journalInput, setJournalInput] = useState("");
   const [adherenceRecords, setAdherenceRecords] = useState<AdherenceRecord[]>([]);
-  const sectionPositions = useRef<Record<string, number>>({});
-  const { scrollTo } = useScreenScroll();
+  const { registerSection, scrollToSection } = useScreenScroll();
 
   const navItems: NavItem[] = useMemo(() => [
     { key: "plan", label: i.navPlan },
@@ -170,15 +169,6 @@ export function PatientScreen({ navigation, route }: Props) {
     { key: "doctor", label: i.navDoctor },
     { key: "account", label: i.navAccount },
   ], [i]);
-
-  function registerSection(key: string, y: number) {
-    sectionPositions.current[key] = y;
-  }
-
-  function scrollToSection(key: string) {
-    const y = sectionPositions.current[key];
-    if (y !== undefined) scrollTo(y);
-  }
 
   useEffect(() => {
     void (async () => {
@@ -329,7 +319,7 @@ export function PatientScreen({ navigation, route }: Props) {
       const speechLang = language === "Spanish" ? "es" : language === "Hindi" ? "hi" : language === "Mandarin" ? "zh-CN" : language === "French" ? "fr" : language === "Arabic" ? "ar" : "en-US";
       if (audioRepliesEnabled) {
         Speech.stop();
-        Speech.speak(reply.message, { language: speechLang, pitch: 1, rate: 0.96 });
+        Speech.speak(reply.message, { language: speechLang });
       }
     } catch (error) {
       console.error("AI reply error:", error);
@@ -375,7 +365,7 @@ export function PatientScreen({ navigation, route }: Props) {
       const speechLang = language === "Spanish" ? "es" : language === "Hindi" ? "hi" : language === "Mandarin" ? "zh-CN" : language === "French" ? "fr" : language === "Arabic" ? "ar" : "en-US";
       if (audioRepliesEnabled) {
         Speech.stop();
-        Speech.speak(reply.message, { language: speechLang, pitch: 1, rate: 0.96 });
+        Speech.speak(reply.message, { language: speechLang });
       }
     } catch (error) {
       console.error("Quick prompt error:", error);
@@ -929,13 +919,6 @@ export function PatientScreen({ navigation, route }: Props) {
           </SectionCard>
           </View>
 
-          <Pressable
-            style={styles.floatingAIButton}
-            onPress={() => scrollToSection("ai")}
-            accessibilityLabel={i.talkToAI}
-          >
-            <Text style={styles.floatingAIButtonText}>{i.talkToAI}</Text>
-          </Pressable>
         </>
       )}
     </>
@@ -1212,24 +1195,5 @@ const styles = StyleSheet.create({
   },
   adherenceMissed: {
     backgroundColor: "#ef4444",
-  },
-  floatingAIButton: {
-    backgroundColor: "#1d4ed8",
-    borderRadius: 999,
-    paddingVertical: 14,
-    paddingHorizontal: 24,
-    alignItems: "center",
-    justifyContent: "center",
-    alignSelf: "center",
-    shadowColor: "#1d4ed8",
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-    elevation: 6,
-  },
-  floatingAIButtonText: {
-    color: "#ffffff",
-    fontSize: 15,
-    fontWeight: "800",
   },
 });

@@ -3,6 +3,7 @@ import {
   ActivityIndicator,
   KeyboardAvoidingView,
   Platform,
+  Pressable,
   SafeAreaView,
   ScrollView,
   StyleSheet,
@@ -10,7 +11,7 @@ import {
   View,
 } from "react-native";
 
-import { ScrollCtx, type ScrollContextValue } from "../lib/ScrollContext";
+import { ScrollCtx, useScreenScroll, type ScrollContextValue } from "../lib/ScrollContext";
 export { useScreenScroll } from "../lib/ScrollContext";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { NavigationContainer } from "@react-navigation/native";
@@ -22,7 +23,7 @@ import {
   getCachedUser,
   type UserAccount,
 } from "../lib/appData";
-import { LanguageProvider } from "../lib/LanguageContext";
+import { LanguageProvider, useLanguage } from "../lib/LanguageContext";
 import { t } from "../lib/i18n";
 import type { RootStackParamList } from "../lib/navigationTypes";
 import { OnboardingScreen, ONBOARDING_KEY } from "../screens/OnboardingScreen";
@@ -34,10 +35,16 @@ export type { RootStackParamList } from "../lib/navigationTypes";
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
 
-function ScreenWrapper({ children, stickyFirst }: { children: React.ReactNode; stickyFirst?: boolean }) {
+function ScreenWrapper({ children, stickyFirst, renderFloating }: { children: React.ReactNode; stickyFirst?: boolean; renderFloating?: () => React.ReactNode }) {
   const scrollRef = useRef<ScrollView>(null);
+  const sectionPositions = useRef<Record<string, number>>({});
   const ctxValue: ScrollContextValue = {
     scrollTo: (y: number) => scrollRef.current?.scrollTo({ y, animated: true }),
+    registerSection: (key: string, y: number) => { sectionPositions.current[key] = y; },
+    scrollToSection: (key: string) => {
+      const y = sectionPositions.current[key];
+      if (y !== undefined) scrollRef.current?.scrollTo({ y, animated: true });
+    },
   };
   return (
     <SafeAreaView style={styles.safeArea}>
@@ -55,6 +62,7 @@ function ScreenWrapper({ children, stickyFirst }: { children: React.ReactNode; s
           >
             {children}
           </ScrollView>
+          {renderFloating ? renderFloating() : null}
         </KeyboardAvoidingView>
       </ScrollCtx.Provider>
     </SafeAreaView>
@@ -78,10 +86,29 @@ function DoctorWrapper(props: { navigation: any; route: any }) {
 }
 
 function PatientWrapper(props: { navigation: any; route: any }) {
+  const { i } = useLanguage();
   return (
-    <ScreenWrapper stickyFirst>
+    <ScreenWrapper
+      stickyFirst
+      renderFloating={() => (
+        <FloatingAIButton label={i.talkToAI} />
+      )}
+    >
       <PatientScreen {...props} />
     </ScreenWrapper>
+  );
+}
+
+function FloatingAIButton({ label }: { label: string }) {
+  const { scrollToSection } = useScreenScroll();
+  return (
+    <Pressable
+      style={styles.floatingAI}
+      onPress={() => scrollToSection("ai")}
+      accessibilityLabel={label}
+    >
+      <Text style={styles.floatingAIText}>{label}</Text>
+    </Pressable>
   );
 }
 
@@ -203,5 +230,24 @@ const styles = StyleSheet.create({
     color: "#64748b",
     fontSize: 15,
     fontWeight: "600",
+  },
+  floatingAI: {
+    position: "absolute",
+    bottom: 20,
+    right: 18,
+    backgroundColor: "#1d4ed8",
+    borderRadius: 999,
+    paddingVertical: 14,
+    paddingHorizontal: 22,
+    shadowColor: "#1d4ed8",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.35,
+    shadowRadius: 10,
+    elevation: 8,
+  },
+  floatingAIText: {
+    color: "#ffffff",
+    fontSize: 14,
+    fontWeight: "800",
   },
 });
