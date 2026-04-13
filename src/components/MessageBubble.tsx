@@ -2,6 +2,7 @@ import { View, Text, StyleSheet } from "react-native";
 import type { AssistantUrgency } from "../lib/showcase";
 import { fleschKincaidGradeLevel, readabilityLabel } from "../lib/readability";
 import { useLanguage } from "../lib/LanguageContext";
+import { AIResponseRenderer } from "./AIResponseRenderer";
 
 export type ChatMessage = {
   id: string;
@@ -64,7 +65,13 @@ export function MessageBubble({ message }: { message: ChatMessage }) {
           ) : null}
         </View>
       </View>
-      <Text style={styles.messageText}>{message.text}</Text>
+      {isAssistant ? (
+        <View style={styles.messageContent}>
+          <AIResponseRenderer text={message.text} />
+        </View>
+      ) : (
+        <Text style={styles.messageText}>{message.text}</Text>
+      )}
       {message.role === "assistant" && message.handoffSuggested ? (
         <Text style={styles.handoffHint}>
           {i.handoffHint}
@@ -104,6 +111,9 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     gap: 6,
     flexWrap: "wrap",
+  },
+  messageContent: {
+    marginTop: 8,
   },
   messageText: {
     marginTop: 8,
