@@ -11,7 +11,7 @@ import type { JournalEntry, AdherenceRecord } from "./appData";
 
 export type AIContext = {
   plan: DoctorPlan;
-  language?: string;
+  language: string;
   latestBiomarker?: BiomarkerReport | null;
   journalEntries?: JournalEntry[];
   adherenceRecords?: AdherenceRecord[];

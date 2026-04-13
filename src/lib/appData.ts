@@ -233,6 +233,8 @@ export type RecoveryScoreResult = {
   patientName: string;
   score: number;
   breakdown: { biomarker: number; adherence: number; engagement: number; journal: number };
+  recentAlerts: number;
+  daysSinceDischarge: number | null;
 };
 
 export async function getRecoveryScores(doctorEmail: string): Promise<RecoveryScoreResult[]> {

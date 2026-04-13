@@ -48,7 +48,6 @@ import {
   startBiomarkerRecording,
   stopAndAnalyze,
   cancelRecording,
-  isRecording as checkIsRecording,
   getRecordingElapsedSeconds,
   getMinRecordingSeconds,
   type BiomarkerReport,
@@ -225,6 +224,8 @@ export function PatientScreen({ navigation, route }: Props) {
     return () => {
       Speech.stop();
       void cancelRecording();
+      setIsBiomarkerRecording(false);
+      setIsAnalyzing(false);
       try {
         ExpoSpeechRecognitionModule.abort();
       } catch {
@@ -288,8 +289,28 @@ export function PatientScreen({ navigation, route }: Props) {
     );
   }, [activePlan, careMessages]);
 
+  function getSpeechLang(): string {
+    switch (language) {
+      case "Spanish": return "es-ES";
+      case "Hindi": return "hi-IN";
+      case "Mandarin": return "zh-CN";
+      case "French": return "fr-FR";
+      case "Arabic": return "ar-SA";
+      default: return "en-US";
+    }
+  }
+
+  function speakReply(text: string) {
+    try {
+      Speech.stop();
+      Speech.speak(text, { language: getSpeechLang() });
+    } catch (speechError) {
+      console.error("Speech synthesis failed:", speechError);
+    }
+  }
+
   async function submitPatientMessage(rawMessage?: string) {
-    if (!activePlan) return;
+    if (!activePlan || isThinking) return;
     const message = (rawMessage ?? patientInput).trim();
     if (!message) return;
 
@@ -316,11 +337,7 @@ export function PatientScreen({ navigation, route }: Props) {
       };
       setMessages((cur) => [...cur, assistantMsg]);
 
-      const speechLang = language === "Spanish" ? "es" : language === "Hindi" ? "hi" : language === "Mandarin" ? "zh-CN" : language === "French" ? "fr" : language === "Arabic" ? "ar" : "en-US";
-      if (audioRepliesEnabled) {
-        Speech.stop();
-        Speech.speak(reply.message, { language: speechLang });
-      }
+      if (audioRepliesEnabled) speakReply(reply.message);
     } catch (error) {
       console.error("AI reply error:", error);
       setMessages((cur) => [
@@ -338,7 +355,7 @@ export function PatientScreen({ navigation, route }: Props) {
   }
 
   async function sendQuickPrompt(label: string, intent: QuickPromptIntent) {
-    if (!activePlan) return;
+    if (!activePlan || isThinking) return;
 
     const patientMsg: ChatMessage = {
       id: `patient-${Date.now()}`,
@@ -362,11 +379,7 @@ export function PatientScreen({ navigation, route }: Props) {
       };
       setMessages((cur) => [...cur, assistantMsg]);
 
-      const speechLang = language === "Spanish" ? "es" : language === "Hindi" ? "hi" : language === "Mandarin" ? "zh-CN" : language === "French" ? "fr" : language === "Arabic" ? "ar" : "en-US";
-      if (audioRepliesEnabled) {
-        Speech.stop();
-        Speech.speak(reply.message, { language: speechLang });
-      }
+      if (audioRepliesEnabled) speakReply(reply.message);
     } catch (error) {
       console.error("Quick prompt error:", error);
       setMessages((cur) => [
@@ -408,7 +421,7 @@ export function PatientScreen({ navigation, route }: Props) {
       setVoiceError(null);
 
       ExpoSpeechRecognitionModule.start({
-        lang: "en-US",
+        lang: getSpeechLang(),
         interimResults: true,
         continuous: false,
         maxAlternatives: 1,
@@ -471,9 +484,9 @@ export function PatientScreen({ navigation, route }: Props) {
       }
     } else {
       try {
+        setBiomarkerReport(null);
         await startBiomarkerRecording();
         setIsBiomarkerRecording(true);
-        setBiomarkerReport(null);
       } catch (error: any) {
         const message = error?.message === "Microphone permission not granted"
           ? "Microphone access was denied. Please enable it in your device settings."

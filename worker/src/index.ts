@@ -532,7 +532,7 @@ export class TetherData {
       }
       const adherenceRecords = data.adherence.filter(a => norm(a.patientEmail) === pe && last7.includes(a.date));
       const takenCount = adherenceRecords.filter(a => a.taken).length;
-      const adherenceScore = adherenceRecords.length > 0 ? Math.round((takenCount / 7) * 30) : 15;
+      const adherenceScore = adherenceRecords.length > 0 ? Math.round((takenCount / adherenceRecords.length) * 30) : 15;
 
       // Engagement score (0-20): messages sent in last 7 days
       const recentMsgs = data.messages.filter(m => norm(m.patientEmail) === pe && norm(m.doctorEmail) === de && new Date(m.createdAt).getTime() > sevenDaysAgo);
