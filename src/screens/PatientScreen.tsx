@@ -18,6 +18,7 @@ import type { NativeStackScreenProps } from "@react-navigation/native-stack";
 
 import { AnimatedButton } from "../components/AnimatedButton";
 import { LanguageDropdown } from "../components/LanguageDropdown";
+import { AnatomyView } from "../components/AnatomyView";
 import { BiomarkerCard } from "../components/BiomarkerCard";
 import { MessageBubble, type ChatMessage } from "../components/MessageBubble";
 import { SectionCard } from "../components/SectionCard";
@@ -620,6 +621,8 @@ export function PatientScreen({ navigation, route }: Props) {
               <SummaryPill label={i.temperature} value={activePlan.temperature} />
               <SummaryPill label={i.oxygen} value={activePlan.oxygenSaturation} />
             </View>
+
+            <AnatomyView plan={activePlan} />
 
             <View style={styles.listCard}>
               <Text style={styles.listTitle}>{i.whatToDoToday}</Text>
