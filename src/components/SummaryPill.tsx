@@ -1,4 +1,5 @@
 import { View, Text, StyleSheet } from "react-native";
+import { colors, radius, SYSTEM_FONT } from "../lib/theme";
 
 export function SummaryPill({
   label,
@@ -19,22 +20,22 @@ const styles = StyleSheet.create({
   summaryPill: {
     minWidth: "47%",
     padding: 14,
-    borderRadius: 18,
-    backgroundColor: "#f8fafc",
-    borderWidth: 1,
-    borderColor: "#e2e8f0",
+    borderRadius: radius.medium,
+    backgroundColor: colors.bgGrouped,
   },
   summaryPillLabel: {
-    color: "#94a3b8",
-    fontSize: 11,
-    fontWeight: "800",
-    letterSpacing: 1,
-    textTransform: "uppercase",
+    color: colors.labelTertiary,
+    fontFamily: SYSTEM_FONT,
+    fontSize: 12,
+    fontWeight: "500",
+    letterSpacing: -0.1,
   },
   summaryPillValue: {
-    marginTop: 8,
-    color: "#0f172a",
-    fontSize: 15,
-    fontWeight: "700",
+    marginTop: 4,
+    color: colors.label,
+    fontFamily: SYSTEM_FONT,
+    fontSize: 17,
+    fontWeight: "600",
+    letterSpacing: -0.2,
   },
 });

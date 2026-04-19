@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { Pressable, Text, View, StyleSheet } from "react-native";
+import { colors, radius, shadow, SYSTEM_FONT } from "../lib/theme";
 
 export type NavItem = {
   key: string;
@@ -30,10 +31,13 @@ export function SectionNav({
 
       {open ? (
         <View style={styles.menu}>
-          {items.map((item) => (
+          {items.map((item, idx) => (
             <Pressable
               key={item.key}
-              style={styles.menuItem}
+              style={[
+                styles.menuItem,
+                idx < items.length - 1 && styles.menuItemDivider,
+              ]}
               onPress={() => {
                 setOpen(false);
                 onPress(item.key);
@@ -54,34 +58,37 @@ const styles = StyleSheet.create({
   },
   hamburger: {
     alignSelf: "flex-start",
-    backgroundColor: "#ffffff",
-    borderRadius: 14,
-    borderWidth: 1,
-    borderColor: "#e2e8f0",
+    backgroundColor: colors.bgCard,
+    borderRadius: radius.medium,
     paddingHorizontal: 14,
     paddingVertical: 10,
+    ...shadow.card,
   },
   hamburgerIcon: {
+    fontFamily: SYSTEM_FONT,
     fontSize: 20,
-    color: "#1d4ed8",
-    fontWeight: "700",
+    color: colors.primary,
+    fontWeight: "600",
   },
   menu: {
     marginTop: 8,
-    backgroundColor: "#ffffff",
-    borderRadius: 20,
-    borderWidth: 1,
-    borderColor: "#e2e8f0",
-    paddingVertical: 6,
+    backgroundColor: colors.bgCard,
+    borderRadius: radius.large,
     overflow: "hidden",
+    ...shadow.floating,
   },
   menuItem: {
-    paddingHorizontal: 20,
+    paddingHorizontal: 18,
     paddingVertical: 14,
   },
+  menuItemDivider: {
+    borderBottomWidth: 0.5,
+    borderBottomColor: colors.separator,
+  },
   menuItemText: {
-    color: "#1d4ed8",
-    fontSize: 15,
-    fontWeight: "700",
+    color: colors.primary,
+    fontFamily: SYSTEM_FONT,
+    fontSize: 16,
+    fontWeight: "500",
   },
 });

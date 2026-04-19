@@ -5,17 +5,17 @@ import {
   Text,
   StyleSheet,
   type ViewStyle,
-  type TextStyle,
 } from "react-native";
+import { colors, radius, SYSTEM_FONT } from "../lib/theme";
 
 type ButtonVariant = "primary" | "secondary" | "voice" | "voiceActive" | "danger";
 
 const VARIANT_STYLES: Record<ButtonVariant, { bg: string; text: string }> = {
-  primary: { bg: "#1d4ed8", text: "#ffffff" },
-  secondary: { bg: "#e2e8f0", text: "#0f172a" },
-  voice: { bg: "#dbeafe", text: "#1d4ed8" },
-  voiceActive: { bg: "#2563eb", text: "#ffffff" },
-  danger: { bg: "#fee2e2", text: "#991b1b" },
+  primary: { bg: colors.primary, text: "#ffffff" },
+  secondary: { bg: colors.bgGrouped, text: colors.label },
+  voice: { bg: colors.primarySoft, text: colors.primary },
+  voiceActive: { bg: colors.primaryDark, text: "#ffffff" },
+  danger: { bg: colors.dangerSoft, text: colors.danger },
 };
 
 export function AnimatedButton({
@@ -34,14 +34,14 @@ export function AnimatedButton({
   style?: ViewStyle;
 }) {
   const scale = useRef(new Animated.Value(1)).current;
-  const colors = VARIANT_STYLES[variant];
+  const variantColors = VARIANT_STYLES[variant];
 
   function handlePressIn() {
     Animated.spring(scale, {
-      toValue: 0.96,
+      toValue: 0.97,
       useNativeDriver: true,
-      speed: 50,
-      bounciness: 4,
+      speed: 40,
+      bounciness: 0,
     }).start();
   }
 
@@ -49,7 +49,7 @@ export function AnimatedButton({
     Animated.spring(scale, {
       toValue: 1,
       useNativeDriver: true,
-      speed: 50,
+      speed: 40,
       bounciness: 4,
     }).start();
   }
@@ -65,11 +65,11 @@ export function AnimatedButton({
         accessibilityRole="button"
         style={[
           styles.button,
-          { backgroundColor: colors.bg },
+          { backgroundColor: variantColors.bg },
           disabled && styles.disabled,
         ]}
       >
-        <Text style={[styles.text, { color: colors.text }]}>{label}</Text>
+        <Text style={[styles.text, { color: variantColors.text }]}>{label}</Text>
       </Pressable>
     </Animated.View>
   );
@@ -77,15 +77,17 @@ export function AnimatedButton({
 
 const styles = StyleSheet.create({
   button: {
-    minHeight: 50,
-    borderRadius: 16,
+    minHeight: 48,
+    borderRadius: radius.medium,
     alignItems: "center",
     justifyContent: "center",
-    paddingHorizontal: 16,
+    paddingHorizontal: 20,
   },
   text: {
-    fontWeight: "800",
-    fontSize: 14,
+    fontFamily: SYSTEM_FONT,
+    fontWeight: "600",
+    fontSize: 15,
+    letterSpacing: -0.2,
   },
   disabled: {
     opacity: 0.5,

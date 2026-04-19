@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Pressable, Text, View, StyleSheet } from "react-native";
 import { SUPPORTED_LANGUAGES, type Language } from "../lib/LanguageContext";
+import { colors, radius, shadow, SYSTEM_FONT } from "../lib/theme";
 
 export function LanguageDropdown({
   current,
@@ -20,10 +21,14 @@ export function LanguageDropdown({
 
       {open ? (
         <View style={styles.menu}>
-          {SUPPORTED_LANGUAGES.map((lang) => (
+          {SUPPORTED_LANGUAGES.map((lang, idx) => (
             <Pressable
               key={lang}
-              style={[styles.option, lang === current && styles.optionActive]}
+              style={[
+                styles.option,
+                idx < SUPPORTED_LANGUAGES.length - 1 && styles.optionDivider,
+                lang === current && styles.optionActive,
+              ]}
               onPress={() => {
                 setOpen(false);
                 onSelect(lang);
@@ -49,52 +54,56 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    backgroundColor: "#ffffff",
-    borderRadius: 14,
-    borderWidth: 1,
-    borderColor: "#e2e8f0",
-    paddingHorizontal: 16,
-    paddingVertical: 14,
+    backgroundColor: colors.bgGrouped,
+    borderRadius: radius.medium,
+    paddingHorizontal: 14,
+    paddingVertical: 13,
   },
   triggerText: {
-    color: "#1d4ed8",
-    fontSize: 15,
-    fontWeight: "700",
+    color: colors.label,
+    fontFamily: SYSTEM_FONT,
+    fontSize: 16,
+    fontWeight: "500",
   },
   arrow: {
-    color: "#94a3b8",
-    fontSize: 12,
+    color: colors.labelTertiary,
+    fontFamily: SYSTEM_FONT,
+    fontSize: 11,
   },
   menu: {
     marginTop: 6,
-    backgroundColor: "#ffffff",
-    borderRadius: 16,
-    borderWidth: 1,
-    borderColor: "#e2e8f0",
+    backgroundColor: colors.bgCard,
+    borderRadius: radius.large,
     overflow: "hidden",
+    ...shadow.floating,
   },
   option: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    paddingHorizontal: 16,
-    paddingVertical: 14,
+    paddingHorizontal: 14,
+    paddingVertical: 13,
+  },
+  optionDivider: {
+    borderBottomWidth: 0.5,
+    borderBottomColor: colors.separator,
   },
   optionActive: {
-    backgroundColor: "#eff6ff",
+    backgroundColor: colors.primarySoft,
   },
   optionText: {
-    color: "#334155",
-    fontSize: 15,
-    fontWeight: "600",
+    color: colors.label,
+    fontFamily: SYSTEM_FONT,
+    fontSize: 16,
+    fontWeight: "400",
   },
   optionTextActive: {
-    color: "#1d4ed8",
-    fontWeight: "700",
+    color: colors.primary,
+    fontWeight: "600",
   },
   check: {
-    color: "#1d4ed8",
+    color: colors.primary,
     fontSize: 16,
-    fontWeight: "700",
+    fontWeight: "600",
   },
 });

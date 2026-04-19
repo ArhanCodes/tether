@@ -1,4 +1,5 @@
 import { Text, StyleSheet } from "react-native";
+import { colors, SYSTEM_FONT } from "../lib/theme";
 
 export function FieldLabel({ children }: { children: string }) {
   return <Text style={styles.fieldLabel}>{children}</Text>;
@@ -6,10 +7,10 @@ export function FieldLabel({ children }: { children: string }) {
 
 const styles = StyleSheet.create({
   fieldLabel: {
-    color: "#475569",
-    fontSize: 12,
-    fontWeight: "800",
-    letterSpacing: 1.2,
-    textTransform: "uppercase",
+    color: colors.labelSecondary,
+    fontFamily: SYSTEM_FONT,
+    fontSize: 13,
+    fontWeight: "500",
+    marginLeft: 4,
   },
 });

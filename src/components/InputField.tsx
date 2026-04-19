@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { View, TextInput, StyleSheet } from "react-native";
+import { colors, radius, SYSTEM_FONT } from "../lib/theme";
 
 import { FieldLabel } from "./FieldLabel";
 
@@ -31,7 +32,7 @@ export function InputField({
         value={value}
         onChangeText={onChangeText}
         placeholder={placeholder}
-        placeholderTextColor="#94a3b8"
+        placeholderTextColor={colors.labelTertiary}
         multiline={multiline}
         secureTextEntry={secureTextEntry}
         keyboardType={keyboardType}
@@ -53,28 +54,25 @@ export function InputField({
 
 const styles = StyleSheet.create({
   inputGroup: {
-    gap: 8,
+    gap: 6,
   },
   input: {
-    minHeight: 52,
-    borderRadius: 18,
-    backgroundColor: "#ffffff",
-    borderWidth: 1.5,
-    borderColor: "#e2e8f0",
-    paddingHorizontal: 16,
-    paddingVertical: 14,
-    color: "#0f172a",
-    fontSize: 15,
+    minHeight: 50,
+    borderRadius: radius.medium,
+    backgroundColor: colors.bgGrouped,
+    borderWidth: 1,
+    borderColor: "transparent",
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+    color: colors.label,
+    fontFamily: SYSTEM_FONT,
+    fontSize: 16,
   },
   multilineInput: {
-    minHeight: 110,
+    minHeight: 96,
   },
   inputFocused: {
-    borderColor: "#3b82f6",
-    shadowColor: "#3b82f6",
-    shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 0.15,
-    shadowRadius: 6,
-    elevation: 2,
+    borderColor: colors.primary,
+    backgroundColor: colors.bgCard,
   },
 });

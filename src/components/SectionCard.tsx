@@ -1,5 +1,6 @@
 import { type ReactNode } from "react";
 import { View, Text, StyleSheet } from "react-native";
+import { colors, radius, shadow, SYSTEM_FONT } from "../lib/theme";
 
 export function SectionCard({
   title,
@@ -21,25 +22,27 @@ export function SectionCard({
 
 const styles = StyleSheet.create({
   sectionCard: {
-    padding: 18,
-    borderRadius: 26,
-    backgroundColor: "#ffffff",
-    borderWidth: 1,
-    borderColor: "#e2e8f0",
+    padding: 20,
+    borderRadius: radius.xl,
+    backgroundColor: colors.bgCard,
+    ...shadow.card,
   },
   sectionTitle: {
-    color: "#0f172a",
-    fontSize: 24,
-    fontWeight: "800",
+    color: colors.label,
+    fontFamily: SYSTEM_FONT,
+    fontSize: 22,
+    fontWeight: "700",
+    letterSpacing: -0.3,
   },
   sectionSubtitle: {
-    marginTop: 6,
-    color: "#64748b",
+    marginTop: 4,
+    color: colors.labelTertiary,
+    fontFamily: SYSTEM_FONT,
     fontSize: 14,
-    lineHeight: 21,
+    lineHeight: 20,
   },
   sectionBody: {
-    marginTop: 18,
-    gap: 16,
+    marginTop: 16,
+    gap: 14,
   },
 });
