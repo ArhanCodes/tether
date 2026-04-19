@@ -178,9 +178,9 @@ async function decodeWebAudio(buffer: ArrayBuffer): Promise<Int16Array> {
     const float32 = audioBuffer.getChannelData(0);
 
     // If the decoded sample rate differs, resample
-    let resampled = float32;
+    let resampled: Float32Array = float32;
     if (audioBuffer.sampleRate !== TARGET_SAMPLE_RATE) {
-      resampled = resample(float32, audioBuffer.sampleRate, TARGET_SAMPLE_RATE);
+      resampled = resample(float32, audioBuffer.sampleRate, TARGET_SAMPLE_RATE) as Float32Array;
     }
 
     // Convert Float32 [-1, 1] to Int16
