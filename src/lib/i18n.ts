@@ -3,10 +3,21 @@
  * Supports English, Spanish, Hindi, Mandarin, French, Arabic.
  */
 
-export type Language = "English" | "Spanish" | "Hindi" | "Mandarin" | "French" | "Arabic";
+export type Language =
+  // Fully translated UI
+  | "English" | "Spanish" | "Hindi" | "Mandarin" | "French" | "Arabic"
+  // AI + speech only (UI falls back to English)
+  | "Portuguese" | "German" | "Italian" | "Russian" | "Japanese" | "Korean"
+  | "Vietnamese" | "Bengali" | "Urdu" | "Tagalog" | "Swahili" | "Turkish"
+  | "Polish" | "Dutch" | "Greek" | "Hebrew" | "Thai" | "Indonesian"
+  | "Punjabi" | "Ukrainian";
 
 export const SUPPORTED_LANGUAGES: Language[] = [
   "English", "Spanish", "Hindi", "Mandarin", "French", "Arabic",
+  "Portuguese", "German", "Italian", "Russian", "Japanese", "Korean",
+  "Vietnamese", "Bengali", "Urdu", "Tagalog", "Swahili", "Turkish",
+  "Polish", "Dutch", "Greek", "Hebrew", "Thai", "Indonesian",
+  "Punjabi", "Ukrainian",
 ];
 
 type TranslationKeys = {
@@ -1620,7 +1631,7 @@ const ar: TranslationKeys = {
   talkToAI: "تحدث مع AI",
 };
 
-const translations: Record<Language, TranslationKeys> = {
+const translations: Partial<Record<Language, TranslationKeys>> = {
   English: en,
   Spanish: es,
   Hindi: hi,
@@ -1629,7 +1640,10 @@ const translations: Record<Language, TranslationKeys> = {
   Arabic: ar,
 };
 
-/** Get the translation object for a language. Falls back to English. */
+/**
+ * Get the translation object for a language. Falls back to English for
+ * languages without full UI translations (AI still responds in them).
+ */
 export function t(language: string): TranslationKeys {
   return translations[language as Language] ?? en;
 }

@@ -297,6 +297,26 @@ export function PatientScreen({ navigation, route }: Props) {
       case "Mandarin": return "zh-CN";
       case "French": return "fr-FR";
       case "Arabic": return "ar-SA";
+      case "Portuguese": return "pt-BR";
+      case "German": return "de-DE";
+      case "Italian": return "it-IT";
+      case "Russian": return "ru-RU";
+      case "Japanese": return "ja-JP";
+      case "Korean": return "ko-KR";
+      case "Vietnamese": return "vi-VN";
+      case "Bengali": return "bn-IN";
+      case "Urdu": return "ur-PK";
+      case "Tagalog": return "fil-PH";
+      case "Swahili": return "sw-KE";
+      case "Turkish": return "tr-TR";
+      case "Polish": return "pl-PL";
+      case "Dutch": return "nl-NL";
+      case "Greek": return "el-GR";
+      case "Hebrew": return "he-IL";
+      case "Thai": return "th-TH";
+      case "Indonesian": return "id-ID";
+      case "Punjabi": return "pa-IN";
+      case "Ukrainian": return "uk-UA";
       default: return "en-US";
     }
   }

@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Pressable, Text, View, StyleSheet } from "react-native";
+import { Pressable, ScrollView, Text, View, StyleSheet } from "react-native";
 import { SUPPORTED_LANGUAGES, type Language } from "../lib/LanguageContext";
 import { colors, radius, shadow, SYSTEM_FONT } from "../lib/theme";
 
@@ -21,25 +21,31 @@ export function LanguageDropdown({
 
       {open ? (
         <View style={styles.menu}>
-          {SUPPORTED_LANGUAGES.map((lang, idx) => (
-            <Pressable
-              key={lang}
-              style={[
-                styles.option,
-                idx < SUPPORTED_LANGUAGES.length - 1 && styles.optionDivider,
-                lang === current && styles.optionActive,
-              ]}
-              onPress={() => {
-                setOpen(false);
-                onSelect(lang);
-              }}
-            >
-              <Text style={[styles.optionText, lang === current && styles.optionTextActive]}>
-                {lang}
-              </Text>
-              {lang === current ? <Text style={styles.check}>✓</Text> : null}
-            </Pressable>
-          ))}
+          <ScrollView
+            style={styles.menuScroll}
+            nestedScrollEnabled
+            showsVerticalScrollIndicator
+          >
+            {SUPPORTED_LANGUAGES.map((lang, idx) => (
+              <Pressable
+                key={lang}
+                style={[
+                  styles.option,
+                  idx < SUPPORTED_LANGUAGES.length - 1 && styles.optionDivider,
+                  lang === current && styles.optionActive,
+                ]}
+                onPress={() => {
+                  setOpen(false);
+                  onSelect(lang);
+                }}
+              >
+                <Text style={[styles.optionText, lang === current && styles.optionTextActive]}>
+                  {lang}
+                </Text>
+                {lang === current ? <Text style={styles.check}>✓</Text> : null}
+              </Pressable>
+            ))}
+          </ScrollView>
         </View>
       ) : null}
     </View>
@@ -76,6 +82,9 @@ const styles = StyleSheet.create({
     borderRadius: radius.large,
     overflow: "hidden",
     ...shadow.floating,
+  },
+  menuScroll: {
+    maxHeight: 320,
   },
   option: {
     flexDirection: "row",
