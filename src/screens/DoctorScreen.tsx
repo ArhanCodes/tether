@@ -273,6 +273,28 @@ export function DoctorScreen({ navigation, route }: Props) {
       <View style={styles.heroCard}>
         <Text style={styles.kicker}>{i.doctorWorkspace}</Text>
         <Text style={styles.heroTitle}>{user.name}</Text>
+        {draftPlan.patientName || draftPlan.doctorName ? (
+          <View style={styles.careTeamCard}>
+            {draftPlan.patientName ? (
+              <View style={styles.careTeamRow}>
+                <Text style={styles.careTeamLabel}>{i.patientNameLabel}</Text>
+                <Text style={styles.careTeamValue}>{draftPlan.patientName}</Text>
+              </View>
+            ) : null}
+            {draftPlan.doctorName ? (
+              <>
+                <View style={styles.careTeamRow}>
+                  <Text style={styles.careTeamLabel}>{i.doctorNameLabel}</Text>
+                  <Text style={styles.careTeamValue}>{draftPlan.doctorName}</Text>
+                </View>
+                <View style={styles.careTeamRow}>
+                  <Text style={styles.careTeamLabel}>{i.careNavigatorLabel}</Text>
+                  <Text style={styles.careTeamValue}>{draftPlan.doctorName}</Text>
+                </View>
+              </>
+            ) : null}
+          </View>
+        ) : null}
         <Text style={styles.heroText}>
           {i.doctorHeroText}
         </Text>
@@ -474,54 +496,83 @@ export function DoctorScreen({ navigation, route }: Props) {
 const styles = StyleSheet.create({
   heroCard: {
     padding: 22,
-    borderRadius: 28,
-    backgroundColor: "#1d4ed8",
+    borderRadius: 20,
+    backgroundColor: "#007AFF",
     gap: 14,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 8,
+    elevation: 3,
   },
   kicker: {
-    color: "#bfdbfe",
+    color: "#CFE4FF",
     fontSize: 12,
-    fontWeight: "800",
-    letterSpacing: 2,
-    textTransform: "uppercase",
+    fontWeight: "600",
+    letterSpacing: 0.5,
   },
   heroTitle: {
     color: "#ffffff",
-    fontSize: 33,
-    lineHeight: 38,
-    fontWeight: "800",
+    fontSize: 30,
+    lineHeight: 34,
+    fontWeight: "700",
+    letterSpacing: -0.6,
   },
   heroText: {
-    color: "#dbeafe",
+    color: "#DBEAFE",
     fontSize: 15,
-    lineHeight: 24,
+    lineHeight: 22,
   },
   heroSubtext: {
-    color: "#93c5fd",
+    color: "#A7C8FF",
     fontSize: 13,
-    lineHeight: 20,
+    lineHeight: 19,
   },
-  buttonRow: { flexDirection: "row", gap: 12 },
+  careTeamCard: {
+    marginTop: 2,
+    padding: 14,
+    borderRadius: 14,
+    backgroundColor: "rgba(255,255,255,0.18)",
+    gap: 8,
+  },
+  careTeamRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+  },
+  careTeamLabel: {
+    color: "#CFE4FF",
+    fontSize: 12,
+    fontWeight: "500",
+    letterSpacing: 0.2,
+  },
+  careTeamValue: {
+    color: "#ffffff",
+    fontSize: 14,
+    fontWeight: "600",
+    letterSpacing: -0.1,
+  },
+  buttonRow: { flexDirection: "row", gap: 10 },
   primaryButton: {
     flex: 1,
-    minHeight: 50,
-    borderRadius: 16,
-    backgroundColor: "#1d4ed8",
+    minHeight: 48,
+    borderRadius: 12,
+    backgroundColor: "#007AFF",
     alignItems: "center",
     justifyContent: "center",
     paddingHorizontal: 16,
   },
-  primaryButtonText: { color: "#ffffff", fontWeight: "800" },
+  primaryButtonText: { color: "#ffffff", fontWeight: "600", fontSize: 15 },
   secondaryButton: {
     flex: 1,
-    minHeight: 50,
-    borderRadius: 16,
-    backgroundColor: "#e2e8f0",
+    minHeight: 44,
+    borderRadius: 12,
+    backgroundColor: "rgba(255,255,255,0.18)",
     alignItems: "center",
     justifyContent: "center",
     paddingHorizontal: 16,
   },
-  secondaryButtonText: { color: "#0f172a", fontWeight: "800" },
+  secondaryButtonText: { color: "#ffffff", fontWeight: "600", fontSize: 15 },
   dualRow: { gap: 12 },
   quadRow: { gap: 12 },
   inputGroup: { gap: 8 },

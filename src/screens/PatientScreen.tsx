@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import {
   Alert,
   Animated,
@@ -158,6 +159,7 @@ export function PatientScreen({ navigation, route }: Props) {
   const [journalEntries, setJournalEntries] = useState<JournalEntry[]>([]);
   const [journalInput, setJournalInput] = useState("");
   const [adherenceRecords, setAdherenceRecords] = useState<AdherenceRecord[]>([]);
+  const [medChecklist, setMedChecklist] = useState<Record<string, boolean>>({});
   const { registerSection, scrollToSection } = useScreenScroll();
 
   const navItems: NavItem[] = useMemo(() => [
@@ -246,6 +248,20 @@ export function PatientScreen({ navigation, route }: Props) {
     }, 500);
     return () => clearInterval(interval);
   }, [isBiomarkerRecording]);
+
+  // Load today's medication checklist from local storage
+  useEffect(() => {
+    void (async () => {
+      try {
+        const today = new Date().toISOString().split("T")[0];
+        const key = `tether-med-checklist:${user.email}:${today}`;
+        const stored = await AsyncStorage.getItem(key);
+        if (stored) setMedChecklist(JSON.parse(stored));
+      } catch (error) {
+        console.error("Failed to load checklist:", error);
+      }
+    })();
+  }, [user.email]);
 
   useSpeechRecognitionEvent("start", () => {
     setIsListening(true);
@@ -558,19 +574,33 @@ export function PatientScreen({ navigation, route }: Props) {
     }
   }
 
-  async function handleAdherence(taken: boolean) {
+  function medChecklistKey(): string {
     const today = new Date().toISOString().split("T")[0];
-    const alreadyRecorded = adherenceRecords.some((r) => r.date === today);
-    if (alreadyRecorded) {
-      Alert.alert(i.medicationAdherence, i.todayRecorded);
-      return;
-    }
+    return `tether-med-checklist:${user.email}:${today}`;
+  }
+
+  async function toggleMedChecklistItem(med: string) {
+    const next = { ...medChecklist, [med]: !medChecklist[med] };
+    setMedChecklist(next);
     try {
-      const record = await recordAdherence(user.email, today, taken);
-      setAdherenceRecords((prev) => [...prev, record]);
-      Alert.alert(i.sent, i.adherenceRecorded);
+      await AsyncStorage.setItem(medChecklistKey(), JSON.stringify(next));
     } catch (error) {
-      Alert.alert(i.error, i.sendFailed);
+      console.error("Checklist save error:", error);
+    }
+
+    // Compute "all taken today" and record adherence
+    const meds = activePlan?.medications ?? [];
+    if (meds.length === 0) return;
+    const allTaken = meds.every((m) => next[m]);
+
+    const today = new Date().toISOString().split("T")[0];
+    try {
+      const record = await recordAdherence(user.email, today, allTaken);
+      setAdherenceRecords((prev) => {
+        const filtered = prev.filter((r) => r.date !== today);
+        return [...filtered, record];
+      });
+    } catch (error) {
       console.error("Adherence error:", error);
     }
   }
@@ -598,6 +628,22 @@ export function PatientScreen({ navigation, route }: Props) {
       <View style={styles.heroCard}>
         <Text style={styles.kicker}>{i.patientCompanion}</Text>
         <Text style={styles.heroTitle}>{user.name}</Text>
+        {activePlan ? (
+          <View style={styles.careTeamCard}>
+            <View style={styles.careTeamRow}>
+              <Text style={styles.careTeamLabel}>{i.patientNameLabel}</Text>
+              <Text style={styles.careTeamValue}>{activePlan.patientName}</Text>
+            </View>
+            <View style={styles.careTeamRow}>
+              <Text style={styles.careTeamLabel}>{i.doctorNameLabel}</Text>
+              <Text style={styles.careTeamValue}>{activePlan.doctorName}</Text>
+            </View>
+            <View style={styles.careTeamRow}>
+              <Text style={styles.careTeamLabel}>{i.careNavigatorLabel}</Text>
+              <Text style={styles.careTeamValue}>{activePlan.doctorName}</Text>
+            </View>
+          </View>
+        ) : null}
         <Text style={styles.heroText}>
           {i.patientHeroText}
         </Text>
@@ -838,21 +884,48 @@ export function PatientScreen({ navigation, route }: Props) {
 
           <View onLayout={(e) => registerSection("meds", e.nativeEvent.layout.y)}>
           <SectionCard title={i.medicationAdherence} subtitle={i.adherenceSubtitle}>
-            <Text style={styles.adherenceQuestion}>{i.didYouTakeMeds}</Text>
-            <View style={styles.buttonRow}>
-              <AnimatedButton
-                label={i.yesTook}
-                variant="primary"
-                onPress={() => void handleAdherence(true)}
-                accessibilityLabel={i.yesTook}
-              />
-              <AnimatedButton
-                label={i.noMissed}
-                variant="secondary"
-                onPress={() => void handleAdherence(false)}
-                accessibilityLabel={i.noMissed}
-              />
-            </View>
+            {activePlan.medications.length === 0 ? (
+              <Text style={styles.adherenceQuestion}>{i.noMedsToday}</Text>
+            ) : (
+              <>
+                <View style={styles.checklistProgress}>
+                  <Text style={styles.checklistProgressText}>
+                    {activePlan.medications.filter(m => medChecklist[m]).length} / {activePlan.medications.length} {i.takenToday}
+                  </Text>
+                  <View style={styles.checklistProgressBar}>
+                    <View
+                      style={[
+                        styles.checklistProgressFill,
+                        {
+                          width: `${(activePlan.medications.filter(m => medChecklist[m]).length / activePlan.medications.length) * 100}%`,
+                        },
+                      ]}
+                    />
+                  </View>
+                </View>
+                <View style={styles.medChecklist}>
+                  {activePlan.medications.map((med) => {
+                    const checked = !!medChecklist[med];
+                    return (
+                      <Pressable
+                        key={med}
+                        style={[styles.medCheckItem, checked && styles.medCheckItemDone]}
+                        onPress={() => void toggleMedChecklistItem(med)}
+                        accessibilityRole="checkbox"
+                        accessibilityState={{ checked }}
+                      >
+                        <View style={[styles.medCheckBox, checked && styles.medCheckBoxDone]}>
+                          {checked ? <Text style={styles.medCheckMark}>✓</Text> : null}
+                        </View>
+                        <Text style={[styles.medCheckText, checked && styles.medCheckTextDone]}>
+                          {med}
+                        </Text>
+                      </Pressable>
+                    );
+                  })}
+                </View>
+              </>
+            )}
             {adherenceRecords.length > 0 ? (
               <View style={styles.adherenceStats}>
                 <Text style={styles.adherenceStatsTitle}>{i.adherenceStreak}</Text>
@@ -872,7 +945,7 @@ export function PatientScreen({ navigation, route }: Props) {
 
           <View onLayout={(e) => registerSection("doctor", e.nativeEvent.layout.y)}>
           <SectionCard
-            title={tpl(i.messageDoctorTitle, { name: activePlan.doctorName })}
+            title={i.messageDoctorTitle}
             subtitle={i.messageDoctorSubtitle}
           >
             {latestAssistantMessage?.handoffSuggested ? (
@@ -884,7 +957,7 @@ export function PatientScreen({ navigation, route }: Props) {
                   style={styles.secondaryButton}
                   onPress={() =>
                     void sendMessageToDoctor(
-                      `Hi ${activePlan.doctorName}, I need help with: ${patientInput || "my current symptoms and recovery plan."}`,
+                      `Hi Human Navigator, I need help with: ${patientInput || "my current symptoms and recovery plan."}`,
                     )
                   }
                 >
@@ -1222,9 +1295,97 @@ const styles = StyleSheet.create({
     borderRadius: 12,
   },
   adherenceTaken: {
-    backgroundColor: "#22c55e",
+    backgroundColor: "#34C759",
   },
   adherenceMissed: {
-    backgroundColor: "#ef4444",
+    backgroundColor: "#FF3B30",
+  },
+  // Medication checklist
+  checklistProgress: {
+    gap: 8,
+  },
+  checklistProgressText: {
+    color: "#1C1C1E",
+    fontSize: 14,
+    fontWeight: "600",
+    letterSpacing: -0.2,
+  },
+  checklistProgressBar: {
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: "#F2F2F7",
+    overflow: "hidden",
+  },
+  checklistProgressFill: {
+    height: "100%",
+    backgroundColor: "#34C759",
+  },
+  medChecklist: {
+    gap: 8,
+  },
+  medCheckItem: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+    padding: 14,
+    borderRadius: 12,
+    backgroundColor: "#F2F2F7",
+  },
+  medCheckItemDone: {
+    backgroundColor: "#E3F9E5",
+  },
+  medCheckBox: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    borderWidth: 2,
+    borderColor: "#D1D1D6",
+    backgroundColor: "#ffffff",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  medCheckBoxDone: {
+    backgroundColor: "#34C759",
+    borderColor: "#34C759",
+  },
+  medCheckMark: {
+    color: "#ffffff",
+    fontSize: 14,
+    fontWeight: "700",
+  },
+  medCheckText: {
+    flex: 1,
+    color: "#1C1C1E",
+    fontSize: 15,
+    lineHeight: 20,
+  },
+  medCheckTextDone: {
+    color: "#3C3C43",
+    textDecorationLine: "line-through",
+  },
+  // Care team card (on hero)
+  careTeamCard: {
+    marginTop: 6,
+    padding: 14,
+    borderRadius: 14,
+    backgroundColor: "rgba(255,255,255,0.18)",
+    gap: 8,
+  },
+  careTeamRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+  },
+  careTeamLabel: {
+    color: "#CFE4FF",
+    fontSize: 12,
+    fontWeight: "500",
+    letterSpacing: 0.2,
+  },
+  careTeamValue: {
+    color: "#ffffff",
+    fontSize: 14,
+    fontWeight: "600",
+    letterSpacing: -0.1,
   },
 });

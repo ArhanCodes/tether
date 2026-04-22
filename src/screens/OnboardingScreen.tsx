@@ -125,7 +125,7 @@ const styles = StyleSheet.create({
     fontSize: 17,
     lineHeight: 24,
     textAlign: "center",
-    maxWidth: width * 0.85,
+    maxWidth: 480,
   },
   dots: {
     flexDirection: "row",
