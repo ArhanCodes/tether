@@ -259,6 +259,10 @@ type TranslationKeys = {
   patientNameLabel: string;
   doctorNameLabel: string;
   careNavigatorLabel: string;
+  voiceGuidanceTitle: string;
+  voiceGuidanceMorning: string;
+  voiceGuidanceNight: string;
+  voiceGuidanceFootnote: string;
 
   // Recovery Score (doctor)
   recoveryScores: string;
@@ -494,6 +498,10 @@ const en: TranslationKeys = {
   patientNameLabel: "Patient",
   doctorNameLabel: "Doctor",
   careNavigatorLabel: "Care Navigator",
+  voiceGuidanceTitle: "When to do a voice check-in",
+  voiceGuidanceMorning: "1. Right after you wake up.",
+  voiceGuidanceNight: "2. Right before you go to bed.",
+  voiceGuidanceFootnote: "Aim for 2 check-ins per day. Find a quiet spot. Each check-in takes about 15 seconds.",
   recoveryScores: "Recovery Scores",
   recoveryScoresSubtitle: "Patients sorted by risk — lowest score needs the most attention.",
   score: "Score",
@@ -723,6 +731,10 @@ const es: TranslationKeys = {
   patientNameLabel: "Paciente",
   doctorNameLabel: "Médico",
   careNavigatorLabel: "Navegador de Cuidados",
+  voiceGuidanceTitle: "Cuándo hacer un control de voz",
+  voiceGuidanceMorning: "1. Justo después de despertarte.",
+  voiceGuidanceNight: "2. Justo antes de acostarte.",
+  voiceGuidanceFootnote: "Haz 2 controles al día. Busca un lugar tranquilo. Cada control dura unos 15 segundos.",
   recoveryScores: "Puntajes de Recuperación",
   recoveryScoresSubtitle: "Pacientes ordenados por riesgo — el puntaje más bajo necesita más atención.",
   score: "Puntaje",
@@ -952,6 +964,10 @@ const hi: TranslationKeys = {
   patientNameLabel: "रोगी",
   doctorNameLabel: "डॉक्टर",
   careNavigatorLabel: "देखभाल नेविगेटर",
+  voiceGuidanceTitle: "आवाज जांच कब करें",
+  voiceGuidanceMorning: "1. जागने के तुरंत बाद।",
+  voiceGuidanceNight: "2. सोने से ठीक पहले।",
+  voiceGuidanceFootnote: "दिन में 2 बार जांच करें। शांत जगह खोजें। हर जांच में लगभग 15 सेकंड लगते हैं।",
   recoveryScores: "रिकवरी स्कोर",
   recoveryScoresSubtitle: "जोखिम के अनुसार मरीज़ — सबसे कम स्कोर को सबसे अधिक ध्यान चाहिए।",
   score: "स्कोर",
@@ -1181,6 +1197,10 @@ const zh: TranslationKeys = {
   patientNameLabel: "患者",
   doctorNameLabel: "医生",
   careNavigatorLabel: "护理导航员",
+  voiceGuidanceTitle: "何时进行语音检查",
+  voiceGuidanceMorning: "1. 起床后立即。",
+  voiceGuidanceNight: "2. 睡觉前。",
+  voiceGuidanceFootnote: "每天检查2次。找一个安静的地方。每次检查大约需要15秒。",
   recoveryScores: "康复评分",
   recoveryScoresSubtitle: "按风险排列患者——最低分需要最多关注。",
   score: "评分",
@@ -1410,6 +1430,10 @@ const fr: TranslationKeys = {
   patientNameLabel: "Patient",
   doctorNameLabel: "Médecin",
   careNavigatorLabel: "Navigateur de Soins",
+  voiceGuidanceTitle: "Quand faire un contrôle vocal",
+  voiceGuidanceMorning: "1. Juste après votre réveil.",
+  voiceGuidanceNight: "2. Juste avant d'aller au lit.",
+  voiceGuidanceFootnote: "Visez 2 contrôles par jour. Trouvez un endroit calme. Chaque contrôle dure environ 15 secondes.",
   recoveryScores: "Scores de Rétablissement",
   recoveryScoresSubtitle: "Patients triés par risque — le score le plus bas nécessite le plus d'attention.",
   score: "Score",
@@ -1639,6 +1663,10 @@ const ar: TranslationKeys = {
   patientNameLabel: "المريض",
   doctorNameLabel: "الطبيب",
   careNavigatorLabel: "مرشد الرعاية",
+  voiceGuidanceTitle: "متى تجري فحص الصوت",
+  voiceGuidanceMorning: "1. مباشرة بعد الاستيقاظ.",
+  voiceGuidanceNight: "2. قبل النوم مباشرة.",
+  voiceGuidanceFootnote: "افحص مرتين يوميًا. ابحث عن مكان هادئ. يستغرق كل فحص حوالي 15 ثانية.",
   recoveryScores: "درجات التعافي",
   recoveryScoresSubtitle: "المرضى مرتبون حسب المخاطر — أقل درجة تحتاج أكبر اهتمام.",
   score: "الدرجة",

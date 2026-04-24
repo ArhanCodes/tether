@@ -1,6 +1,7 @@
 export type DoctorPlan = {
   doctorName: string;
   doctorEmail: string;
+  careNavigatorName?: string;
   patientName: string;
   patientEmail: string;
   age: string;
@@ -48,6 +49,7 @@ export const quickPrompts: Array<{
 export const demoDoctorPlan: DoctorPlan = {
   doctorName: "Dr. Sana Malik",
   doctorEmail: "doctor@tether.app",
+  careNavigatorName: "Maya Chen",
   patientName: "Ava Thompson",
   patientEmail: "patient@tether.app",
   age: "67",

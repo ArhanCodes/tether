@@ -87,8 +87,8 @@ export function DoctorScreen({ navigation, route }: Props) {
     { key: "publish", label: i.navPublish },
     { key: "preview", label: i.navPreview },
     { key: "scores", label: i.navScores },
-    { key: "account", label: i.navAccount },
     { key: "messages", label: i.navMessages },
+    { key: "account", label: i.navAccount },
   ], [i]);
 
   useEffect(() => {
@@ -289,7 +289,7 @@ export function DoctorScreen({ navigation, route }: Props) {
                 </View>
                 <View style={styles.careTeamRow}>
                   <Text style={styles.careTeamLabel}>{i.careNavigatorLabel}</Text>
-                  <Text style={styles.careTeamValue}>{draftPlan.doctorName}</Text>
+                  <Text style={styles.careTeamValue}>{draftPlan.careNavigatorName ?? "—"}</Text>
                 </View>
               </>
             ) : null}
@@ -318,6 +318,13 @@ export function DoctorScreen({ navigation, route }: Props) {
           <InputField label={i.doctorLabel} value={draftPlan.doctorName} onChangeText={(v) => updateField("doctorName", v)} placeholder="Dr. Sana Malik" />
           <InputField label={i.doctorEmail} value={draftPlan.doctorEmail} onChangeText={(v) => updateField("doctorEmail", v)} placeholder="doctor@tether.app" keyboardType="email-address" autoCapitalize="none" />
         </View>
+
+        <InputField
+          label={i.careNavigatorLabel}
+          value={draftPlan.careNavigatorName ?? ""}
+          onChangeText={(v) => updateField("careNavigatorName", v)}
+          placeholder="Maya Chen"
+        />
 
         <View style={styles.dualRow}>
           <InputField label={i.patientLabel} value={draftPlan.patientName} onChangeText={(v) => updateField("patientName", v)} placeholder="Ava Thompson" />
@@ -410,18 +417,6 @@ export function DoctorScreen({ navigation, route }: Props) {
       </SectionCard>
       </View>
 
-      <View onLayout={(e) => registerSection("account", e.nativeEvent.layout.y)}>
-      <SectionCard title={i.accountSafetyDoctor} subtitle={i.accountSafetyDoctorSubtitle}>
-        <View style={styles.previewGrid}>
-          <SummaryPill label={i.role} value={i.doctor} />
-          <SummaryPill label={i.signedInAs} value={user.email} />
-        </View>
-        <Text style={styles.previewText}>
-          {i.doctorSafetyText}
-        </Text>
-      </SectionCard>
-      </View>
-
       <View onLayout={(e) => registerSection("messages", e.nativeEvent.layout.y)}>
       <SectionCard title={i.patientMessages} subtitle={i.patientMessagesSubtitle}>
         {doctorThreadOptions.length > 0 ? (
@@ -487,6 +482,18 @@ export function DoctorScreen({ navigation, route }: Props) {
             {i.noPatientMessages}
           </Text>
         )}
+      </SectionCard>
+      </View>
+
+      <View onLayout={(e) => registerSection("account", e.nativeEvent.layout.y)}>
+      <SectionCard title={i.accountSafetyDoctor} subtitle={i.accountSafetyDoctorSubtitle}>
+        <View style={styles.previewGrid}>
+          <SummaryPill label={i.role} value={i.doctor} />
+          <SummaryPill label={i.signedInAs} value={user.email} />
+        </View>
+        <Text style={styles.previewText}>
+          {i.doctorSafetyText}
+        </Text>
       </SectionCard>
       </View>
     </>

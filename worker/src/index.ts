@@ -31,6 +31,7 @@ interface UserAccount {
 interface DoctorPlan {
   doctorName: string;
   doctorEmail: string;
+  careNavigatorName?: string;
   patientName: string;
   patientEmail: string;
   age: string;
@@ -160,6 +161,7 @@ export class TetherData {
       ],
       plans: [{
         doctorName: "Dr. Sana Malik", doctorEmail: "doctor@tether.app",
+        careNavigatorName: "Maya Chen",
         patientName: "Ava Thompson", patientEmail: "patient@tether.app",
         age: "67", diagnosis: "Post-discharge pneumonia recovery with mild shortness of breath",
         symptomSummary: "Fatigue, mild cough, low appetite, and breathlessness when walking upstairs.",

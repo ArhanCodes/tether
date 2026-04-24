@@ -160,6 +160,7 @@ export function PatientScreen({ navigation, route }: Props) {
   const [journalInput, setJournalInput] = useState("");
   const [adherenceRecords, setAdherenceRecords] = useState<AdherenceRecord[]>([]);
   const [medChecklist, setMedChecklist] = useState<Record<string, boolean>>({});
+  const [todoChecklist, setTodoChecklist] = useState<Record<string, boolean>>({});
   const { registerSection, scrollToSection } = useScreenScroll();
 
   const navItems: NavItem[] = useMemo(() => [
@@ -249,14 +250,19 @@ export function PatientScreen({ navigation, route }: Props) {
     return () => clearInterval(interval);
   }, [isBiomarkerRecording]);
 
-  // Load today's medication checklist from local storage
+  // Load today's medication and to-do checklists from local storage
   useEffect(() => {
     void (async () => {
       try {
         const today = new Date().toISOString().split("T")[0];
-        const key = `tether-med-checklist:${user.email}:${today}`;
-        const stored = await AsyncStorage.getItem(key);
-        if (stored) setMedChecklist(JSON.parse(stored));
+        const medKey = `tether-med-checklist:${user.email}:${today}`;
+        const todoKey = `tether-todo-checklist:${user.email}:${today}`;
+        const [medStored, todoStored] = await Promise.all([
+          AsyncStorage.getItem(medKey),
+          AsyncStorage.getItem(todoKey),
+        ]);
+        if (medStored) setMedChecklist(JSON.parse(medStored));
+        if (todoStored) setTodoChecklist(JSON.parse(todoStored));
       } catch (error) {
         console.error("Failed to load checklist:", error);
       }
@@ -549,7 +555,7 @@ export function PatientScreen({ navigation, route }: Props) {
       });
       setCareMessages(await getCareMessages(user.email));
       setCareMessageInput("");
-      Alert.alert(i.sent, tpl(i.messageSentTo, { name: activePlan.doctorName }));
+      Alert.alert(i.sent, tpl(i.messageSentTo, { name: activePlan.careNavigatorName ?? i.careNavigatorLabel }));
     } catch (error) {
       Alert.alert(i.error, i.sendFailed);
       console.error("Send message error:", error);
@@ -577,6 +583,21 @@ export function PatientScreen({ navigation, route }: Props) {
   function medChecklistKey(): string {
     const today = new Date().toISOString().split("T")[0];
     return `tether-med-checklist:${user.email}:${today}`;
+  }
+
+  function todoChecklistKey(): string {
+    const today = new Date().toISOString().split("T")[0];
+    return `tether-todo-checklist:${user.email}:${today}`;
+  }
+
+  async function toggleTodoItem(item: string) {
+    const next = { ...todoChecklist, [item]: !todoChecklist[item] };
+    setTodoChecklist(next);
+    try {
+      await AsyncStorage.setItem(todoChecklistKey(), JSON.stringify(next));
+    } catch (error) {
+      console.error("Todo save error:", error);
+    }
   }
 
   async function toggleMedChecklistItem(med: string) {
@@ -640,7 +661,7 @@ export function PatientScreen({ navigation, route }: Props) {
             </View>
             <View style={styles.careTeamRow}>
               <Text style={styles.careTeamLabel}>{i.careNavigatorLabel}</Text>
-              <Text style={styles.careTeamValue}>{activePlan.doctorName}</Text>
+              <Text style={styles.careTeamValue}>{activePlan.careNavigatorName ?? "—"}</Text>
             </View>
           </View>
         ) : null}
@@ -692,9 +713,27 @@ export function PatientScreen({ navigation, route }: Props) {
 
             <View style={styles.listCard}>
               <Text style={styles.listTitle}>{i.whatToDoToday}</Text>
-              {activePlan.dailyInstructions.map((item) => (
-                <Text key={item} style={styles.listItem}>• {item}</Text>
-              ))}
+              <View style={styles.todoList}>
+                {activePlan.dailyInstructions.map((item) => {
+                  const checked = !!todoChecklist[item];
+                  return (
+                    <Pressable
+                      key={item}
+                      style={[styles.medCheckItem, checked && styles.medCheckItemDone]}
+                      onPress={() => void toggleTodoItem(item)}
+                      accessibilityRole="checkbox"
+                      accessibilityState={{ checked }}
+                    >
+                      <View style={[styles.medCheckBox, checked && styles.medCheckBoxDone]}>
+                        {checked ? <Text style={styles.medCheckMark}>✓</Text> : null}
+                      </View>
+                      <Text style={[styles.medCheckText, checked && styles.medCheckTextDone]}>
+                        {item}
+                      </Text>
+                    </Pressable>
+                  );
+                })}
+              </View>
             </View>
 
             <View style={styles.listCard}>
@@ -787,6 +826,12 @@ export function PatientScreen({ navigation, route }: Props) {
             title={i.voiceBiomarkers}
             subtitle={i.biomarkerSubtitle}
           >
+            <View style={styles.voiceGuidance}>
+              <Text style={styles.voiceGuidanceTitle}>{i.voiceGuidanceTitle}</Text>
+              <Text style={styles.voiceGuidanceItem}>{i.voiceGuidanceMorning}</Text>
+              <Text style={styles.voiceGuidanceItem}>{i.voiceGuidanceNight}</Text>
+              <Text style={styles.voiceGuidanceFootnote}>{i.voiceGuidanceFootnote}</Text>
+            </View>
             <View style={styles.buttonRow}>
               <AnimatedButton
                 label={
@@ -957,7 +1002,7 @@ export function PatientScreen({ navigation, route }: Props) {
                   style={styles.secondaryButton}
                   onPress={() =>
                     void sendMessageToDoctor(
-                      `Hi Human Navigator, I need help with: ${patientInput || "my current symptoms and recovery plan."}`,
+                      `Hi ${activePlan.careNavigatorName ?? "Care Navigator"}, I need help with: ${patientInput || "my current symptoms and recovery plan."}`,
                     )
                   }
                 >
@@ -970,7 +1015,7 @@ export function PatientScreen({ navigation, route }: Props) {
               <View style={styles.emptyState}>
                 <Text style={styles.emptyStateIcon}>💬</Text>
                 <Text style={styles.emptyStateText}>
-                  {i.noMessagesYet} {tpl(i.noMessagesHint, { name: activePlan.doctorName })}
+                  {i.noMessagesYet} {tpl(i.noMessagesHint, { name: activePlan.careNavigatorName ?? i.careNavigatorLabel })}
                 </Text>
               </View>
             ) : (
@@ -989,7 +1034,11 @@ export function PatientScreen({ navigation, route }: Props) {
                     ]}
                   >
                     <View style={styles.messageHeader}>
-                      <Text style={styles.messageRole}>{msg.senderName}</Text>
+                      <Text style={styles.messageRole}>
+                        {msg.senderRole === "doctor"
+                          ? (activePlan.careNavigatorName ?? i.careNavigatorLabel)
+                          : msg.senderName}
+                      </Text>
                       <Text style={styles.threadTime}>{formatTimestamp(msg.createdAt)}</Text>
                     </View>
                     <Text style={styles.messageText}>{msg.body}</Text>
@@ -1362,6 +1411,37 @@ const styles = StyleSheet.create({
   medCheckTextDone: {
     color: "#3C3C43",
     textDecorationLine: "line-through",
+  },
+  // To-do list (matches medication checklist style)
+  todoList: {
+    gap: 8,
+    marginTop: 6,
+  },
+  // Voice biomarker guidance
+  voiceGuidance: {
+    padding: 14,
+    borderRadius: 12,
+    backgroundColor: "#E5F0FF",
+    gap: 4,
+  },
+  voiceGuidanceTitle: {
+    color: "#0051D5",
+    fontSize: 14,
+    fontWeight: "700",
+    letterSpacing: -0.2,
+    marginBottom: 4,
+  },
+  voiceGuidanceItem: {
+    color: "#1C1C1E",
+    fontSize: 14,
+    lineHeight: 20,
+    fontWeight: "500",
+  },
+  voiceGuidanceFootnote: {
+    color: "#3C3C43",
+    fontSize: 13,
+    lineHeight: 18,
+    marginTop: 6,
   },
   // Care team card (on hero)
   careTeamCard: {
