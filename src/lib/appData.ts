@@ -124,6 +124,10 @@ export async function login(email: string, password: string): Promise<UserAccoun
   });
 }
 
+export async function fetchMe(userId: string): Promise<UserAccount> {
+  return apiFetch<UserAccount>(`/api/me?id=${encodeURIComponent(userId)}`);
+}
+
 // ── Plans (server) ───────────────────────────────────────────────────
 
 export async function getPublishedPlans(email?: string): Promise<DoctorPlan[]> {
@@ -272,8 +276,9 @@ export async function clearDoctorDraft(userEmail: string): Promise<void> {
 
 export function buildDoctorStarterDraft(account: UserAccount): DoctorPlan {
   return {
-    doctorName: account.name,
+    doctorName: "",
     doctorEmail: account.email,
+    careNavigatorName: account.name,
     patientName: "",
     patientEmail: "",
     age: "",

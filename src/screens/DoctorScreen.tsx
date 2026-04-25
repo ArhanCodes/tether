@@ -289,7 +289,7 @@ export function DoctorScreen({ navigation, route }: Props) {
                 </View>
                 <View style={styles.careTeamRow}>
                   <Text style={styles.careTeamLabel}>{i.careNavigatorLabel}</Text>
-                  <Text style={styles.careTeamValue}>{draftPlan.careNavigatorName ?? "—"}</Text>
+                  <Text style={styles.careTeamValue}>{draftPlan.careNavigatorName || user.name}</Text>
                 </View>
               </>
             ) : null}
@@ -488,7 +488,7 @@ export function DoctorScreen({ navigation, route }: Props) {
       <View onLayout={(e) => registerSection("account", e.nativeEvent.layout.y)}>
       <SectionCard title={i.accountSafetyDoctor} subtitle={i.accountSafetyDoctorSubtitle}>
         <View style={styles.previewGrid}>
-          <SummaryPill label={i.role} value={i.doctor} />
+          <SummaryPill label={i.role} value={i.careNavigatorLabel} />
           <SummaryPill label={i.signedInAs} value={user.email} />
         </View>
         <Text style={styles.previewText}>

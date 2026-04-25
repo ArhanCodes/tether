@@ -145,10 +145,15 @@ export class TetherData {
       for (const u of stored.users) {
         if (!u.language) u.language = "English";
       }
+      // Migrate: rename the demo account from Dr. Sana Malik to Maya Chen
+      // (the day-to-day operator is the care navigator, not the doctor)
+      const demo = stored.users.find(u => norm(u.email) === "doctor@tether.app");
+      if (demo && demo.name === "Dr. Sana Malik") demo.name = "Maya Chen";
       if (!stored.biomarkers) stored.biomarkers = [];
       if (!stored.journal) stored.journal = [];
       if (!stored.adherence) stored.adherence = [];
       this.data = stored;
+      await this.save();
       return stored;
     }
     // Seed starter accounts
@@ -156,7 +161,7 @@ export class TetherData {
     const patientHash = await sha256("password123");
     const seed: TetherState = {
       users: [
-        { id: makeId("doctor"), name: "Dr. Sana Malik", email: "doctor@tether.app", passwordHash: doctorHash, role: "doctor", language: "English", createdAt: new Date().toISOString() },
+        { id: makeId("doctor"), name: "Maya Chen", email: "doctor@tether.app", passwordHash: doctorHash, role: "doctor", language: "English", createdAt: new Date().toISOString() },
         { id: makeId("patient"), name: "Ava Thompson", email: "patient@tether.app", passwordHash: patientHash, role: "patient", language: "English", createdAt: new Date().toISOString() },
       ],
       plans: [{
@@ -207,6 +212,7 @@ export class TetherData {
         if (path === "/api/messages") return this.getMessages(url);
         if (path === "/api/biomarkers") return this.getBiomarkers(url);
         if (path === "/api/users") return this.getUsers(url);
+        if (path === "/api/me") return this.getMe(url);
         if (path === "/api/journal") return this.getJournal(url);
         if (path === "/api/adherence") return this.getAdherence(url);
         if (path === "/api/recovery-score") return this.getRecoveryScore(url);
@@ -256,6 +262,15 @@ export class TetherData {
     const hash = await sha256(body.password);
     const user = data.users.find(u => norm(u.email) === email && u.passwordHash === hash);
     if (!user) return json({ error: "Invalid email or password" }, 401);
+    return json({ id: user.id, name: user.name, email: user.email, role: user.role, language: user.language });
+  }
+
+  private async getMe(url: URL): Promise<Response> {
+    const id = url.searchParams.get("id");
+    if (!id) return json({ error: "id required" }, 400);
+    const data = await this.load();
+    const user = data.users.find(u => u.id === id);
+    if (!user) return json({ error: "User not found" }, 404);
     return json({ id: user.id, name: user.name, email: user.email, role: user.role, language: user.language });
   }
 

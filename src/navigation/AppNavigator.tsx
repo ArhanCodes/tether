@@ -21,6 +21,8 @@ import { StatusBar } from "expo-status-bar";
 import {
   getSession,
   getCachedUser,
+  cacheUser,
+  fetchMe,
   type UserAccount,
 } from "../lib/appData";
 import { LanguageProvider, useLanguage } from "../lib/LanguageContext";
@@ -135,10 +137,14 @@ export function AppNavigator() {
         } else if (session) {
           const cachedUser = await getCachedUser();
           if (cachedUser) {
-            setInitialUser(cachedUser);
-            if (cachedUser.language) setUserLanguage(cachedUser.language);
+            const refreshed = await fetchMe(session.userId).catch(() => cachedUser);
+            if (refreshed.name !== cachedUser.name || refreshed.language !== cachedUser.language) {
+              await cacheUser(refreshed);
+            }
+            setInitialUser(refreshed);
+            if (refreshed.language) setUserLanguage(refreshed.language);
             setInitialRoute(
-              cachedUser.role === "doctor" ? "DoctorWorkspace" : "PatientCompanion",
+              refreshed.role === "doctor" ? "DoctorWorkspace" : "PatientCompanion",
             );
           } else {
             setInitialRoute("Auth");
