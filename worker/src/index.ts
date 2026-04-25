@@ -149,6 +149,13 @@ export class TetherData {
       // (the day-to-day operator is the care navigator, not the doctor)
       const demo = stored.users.find(u => norm(u.email) === "doctor@tether.app");
       if (demo && demo.name === "Dr. Sana Malik") demo.name = "Maya Chen";
+      // Migrate: rename existing messages whose sender was the demo account
+      // before the rename. Only doctor-side senders are affected.
+      for (const m of stored.messages) {
+        if (m.senderRole === "doctor" && m.senderName === "Dr. Sana Malik") {
+          m.senderName = "Maya Chen";
+        }
+      }
       if (!stored.biomarkers) stored.biomarkers = [];
       if (!stored.journal) stored.journal = [];
       if (!stored.adherence) stored.adherence = [];
